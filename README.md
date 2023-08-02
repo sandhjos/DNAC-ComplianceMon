@@ -1,16 +1,19 @@
-# ConfigMon
-Configuration Monitoring and Compliance using Cisco DNA Center
+# DNA Center Compliance Monitor
+Using Cisco DNA Center for Configuration Monitoring and Compliance and sending notifications as incidents to ServiceNow
 
-This repo will showcase an use case of how to detect and mitigate unauthorized, or non-compliant configuration changes. 
+This repo will use xml formatted compliance rules from Cisco DNA Center to how to detect and mitigate unauthorized, or non-compliant configuration changes and notify ServiceNow or via Email.
 
 ## The Challenge: 
  - 70% of policy violations are due to user errors
- - Configuration drifting 
+ - Configuration drifting
+ - non compliant code
+ - compliancy audits
 
 ## The Goal: 
  - Detect and alert on all network configuration changes
- - Automated roll back of non-compliant changes
+ - Automate roll back of non-compliant changes
  - Approval process for all compliant configuration changes
+ - Report on Non Complaint configurations
 
 ## The Solution:
  - Integration between Cisco DNA Center, ServiceNow, IOS XE Programmability, and Webex Teams
