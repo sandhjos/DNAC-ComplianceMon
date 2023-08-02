@@ -3,6 +3,8 @@ Using Cisco DNA Center for Configuration Monitoring and Compliance and sending n
 
 This repo will use xml formatted compliance rules from Cisco DNA Center to how to detect and mitigate unauthorized, or non-compliant configuration changes and notify ServiceNow or via Email.
 
+This repo is based on ConfigMon-DNAC by Gabi Z
+
 ## The Challenge: 
  - 70% of policy violations are due to user errors
  - Configuration drifting
@@ -20,7 +22,7 @@ This repo will use xml formatted compliance rules from Cisco DNA Center to how t
  - The application may run on demand, scheduled or continuously
 
 ## Workflow:
- - Collect real time network devices running configurations using the Cisco DNA Center Command Runner APIs
+ - Collect network devices running configurations using the Cisco DNA Center Command Runner APIs
  - Create a local folder with all the running configurations
  - If the device is new, add the configuration to the local folder
  - If device is known, check for configuration changes
@@ -31,6 +33,7 @@ This repo will use xml formatted compliance rules from Cisco DNA Center to how t
    - no logging configuration changes, 
    - no access control lists configuration,
    - prevent IPv4 duplicate addresses
+   - check for non compliant configurations using xml audits from Prime
  - Rollback configuration if compliance violations, test if successful or not, update the ServiceNow incident
  - If no compliance violations ask for approval from change control manager and update ServiceNow incident
  - Act upon the answer in ServiceNow - approved/denied or timeout by saving the new configuration or rollback the configuration
