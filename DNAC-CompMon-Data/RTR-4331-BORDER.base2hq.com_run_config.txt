@@ -1,0 +1,1166 @@
+
+Building configuration...
+
+Current configuration : 42147 bytes
+!
+! Last configuration change at 18:55:53 EDT Sun Jul 30 2023
+!
+version 17.6
+service tcp-keepalives-in
+service tcp-keepalives-out
+service timestamps debug datetime msec localtime show-timezone
+service timestamps log datetime msec show-timezone year
+service password-encryption
+service sequence-numbers
+service call-home
+platform qfp utilization monitor load 80
+no platform punt-keepalive disable-kernel-core
+platform hardware throughput level boost
+!
+hostname RTR-4331-BORDER
+!
+boot-start-marker
+boot system flash bootflash:isr4300-universalk9.17.06.05.SPA.bin
+boot-end-marker
+!
+!
+vrf definition Mgmt-intf
+ !
+ address-family ipv4
+ exit-address-family
+ !
+ address-family ipv6
+ exit-address-family
+!
+logging buffered 16384
+enable secret 9 xxxxxxxx
+!
+aaa new-model
+!
+!
+aaa group server radius CON-VTY
+ server-private 10.10.0.250 key 7 094F471A1A0A464058
+ deadtime 6
+!
+aaa group server radius dnac-client-radius-group
+ server name dnac-radius_10.10.0.200
+ ip radius source-interface Loopback0
+!
+aaa authentication login default local
+aaa authentication login CON-VTY group CON-VTY local-case
+aaa authentication login dnac-cts-list group dnac-client-radius-group local
+aaa authentication login ASYNC-ONLY none
+aaa authentication dot1x default group dnac-client-radius-group
+aaa authorization console
+aaa authorization exec default local 
+aaa authorization exec CON-VTY group CON-VTY local 
+aaa authorization network default group dnac-client-radius-group 
+aaa authorization network dnac-cts-list group dnac-client-radius-group 
+aaa accounting update newinfo periodic 2880
+aaa accounting identity default start-stop group dnac-client-radius-group
+aaa accounting exec CON-VTY start-stop group CON-VTY
+!
+!
+!
+!
+!
+aaa server radius dynamic-author
+ client 10.10.0.200 server-key 7 xxxxxxxx
+!
+aaa session-id common
+clock timezone EST -5 0
+clock summer-time EDT recurring
+!
+ip multicast-routing distributed
+!
+!
+ip nbar custom socio http url "app.socio.events" id 6676 
+ip nbar custom VUDU http url "https://www.vudu.com" id 55850 
+!
+ip nbar attribute-map TC3_BR0
+ attribute traffic-class multimedia-streaming
+ attribute business-relevance business-relevant
+!
+!
+ip nbar attribute-set socio TC3_BR0
+ip nbar attribute-set VUDU TC3_BR0
+!
+ip host ASA 2002 10.0.0.100
+ip host ASW 2006 10.0.0.100
+ip host ASW2 2007 10.0.0.100
+ip host CSW 2004 10.0.0.100
+ip host DSW 2005 10.0.0.100
+ip host MSW 2009 10.0.0.100
+ip host RTR 2003 10.0.0.100
+ip host WLC 2008 10.0.0.100
+ip name-server 10.10.0.250
+ip domain name base2hq.com
+!
+!
+!
+ login xxxxxx
+!
+!
+!
+!
+!
+!
+!
+subscriber templating
+! 
+! 
+! 
+! 
+!
+!
+!
+parameter-map type webauth global
+ watch-list dynamic-expiry-timeout 0
+!
+avc sd-service
+ segment AppRecognition
+ controller
+  address 10.10.0.20 
+  destination-ports sensor-exporter 21730
+  dscp 16
+  source-interface Loopback0
+  transport application-updates https  
+ !
+!
+multilink bundle-name authenticated
+!
+flow exporter 10.10.0.20
+ destination 10.10.0.20
+!
+!
+!
+!
+access-session mac-move deny
+!
+key xxxxxxxx
+ key xxxxxxxx
+  key-string xxxxxxxx
+!
+!
+crytpo pki xxxxxxx
+ enrollment terminal
+ revocation-check crl
+!
+crytpo pki xxxxxxx
+ enrollment selfsigned
+ subject-name xxxxxxxx
+ revocation-check none
+ rsakeypair TP-self-signed- xxxxxxxx
+!
+crytpo pki xxxxxxx
+ enrollment mode ra
+ enrollment terminal
+ usage ssl-client
+ revocation-check crl none
+ source interface Loopback0
+!
+crytpo pki xxxxxxx
+ enrollment url http://10.10.0.20:80/ejbca/publicweb/apply/scep/sdnscep
+ fqdn RTR-4331-BORDER.base2hq.com
+ subject-name xxxxxxxx
+ subject-alt-name RTR-4331-BORDER.base2hq.com
+ revocation-check crl
+ source interface Loopback0
+ rsakeypair xxxxxxxx
+ auto-enroll 80 regenerate
+!
+!
+crypto pki certificate chain xxxxxxx
+ certificate ca xxxxxxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+quit
+crypto pki certificate chain xxxxxxx
+ certificate self-signed xxxxxxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+quit
+crypto pki certificate chain xxxxxxx
+ certificate ca xxxxxxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+quit
+crypto pki certificate chain xxxxxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+quit
+ certificate ca xxxxxxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+  xxxx  xxxxx  xxxx  xxxx  xxxx
+quit
+!
+crypto pki certificate xxxxxxxx
+ cabundle nvram:ios_core.p7b
+!
+cts authorization list dnac-cts-list
+!
+!
+performance monitor context ASSURANCE profile application-performance
+ mode optimized
+ exporter destination 10.10.0.20 source Loopback0 transport udp port 6007
+ traffic-monitor application-client-server-stats
+ traffic-monitor application-response-time
+!
+!
+performance monitor context tesseract profile application-performance
+ mode optimized
+ exporter destination 10.10.0.20 source Loopback0 transport udp port 6007
+ traffic-monitor application-client-server-stats
+ traffic-monitor application-response-time
+ traffic-monitor media
+!
+no license feature hseck9
+license udi pid ISR4331/K9 sn FDO20040664
+license accept end user agreement
+license boot suite FoundationSuiteK9
+license boot level appxk9
+license boot level securityk9
+license smart utility
+license smart transport callhome
+memory free low-watermark processor 67089
+!
+diagnostic bootup level minimal
+!
+spanning-tree extend system-id
+service-template webauth-global-inactive
+ inactivity-timer 3600 
+service-template DEFAULT_LINKSEC_POLICY_MUST_SECURE
+ linksec policy must-secure
+service-template DEFAULT_LINKSEC_POLICY_SHOULD_SECURE
+ linksec policy should-secure
+service-template DEFAULT_CRITICAL_VOICE_TEMPLATE
+ voice vlan
+service-template DEFAULT_CRITICAL_DATA_TEMPLATE
+dot1x system-auth-control
+!
+username admin privilege 15 secret xxxxxx 
+username menu privilege 15 secret xxxxxx 
+username menu autocommand menu ALL
+username demouser privilege 3 view ALLOWEDCMDS secret 9 $9$9CAl67Z/Ctvri.$VgQOXAsJg2gI7FmRtcxyyVnoFVatyt/UdYAZOSIEBfI
+username demouser autocommand menu DEMO
+!
+redundancy
+ mode none
+!
+!
+!
+!
+!
+!
+!
+!
+class-map match-any DNA-EZQOS_12C#REALTIME
+ match dscp cs4 
+class-map match-any DNA-MARKING_IN#REALTIME_CUSTOM
+class-map match-all DNA-MARKING_IN#MM_STREAM
+ match protocol attribute traffic-class multimedia-streaming
+ match protocol attribute business-relevance business-relevant
+class-map match-all DNA-MARKING_IN#OAM
+ match protocol attribute traffic-class ops-admin-mgmt
+ match protocol attribute business-relevance business-relevant
+class-map match-all DNA-MARKING_IN#CONTROL
+ match protocol attribute traffic-class network-control
+ match protocol attribute business-relevance business-relevant
+class-map match-any DNA-MARKING_IN#TRANS_DATA_CUSTOM
+class-map match-all DNA-MARKING_IN#MM_CONF
+ match protocol attribute traffic-class multimedia-conferencing
+ match protocol attribute business-relevance business-relevant
+class-map match-all DNA-MARKING_IN#SCAVENGER
+ match protocol attribute business-relevance business-irrelevant
+class-map match-all DNA-MARKING_IN#SIGNALING
+ match protocol attribute traffic-class signaling
+ match protocol attribute business-relevance business-relevant
+class-map match-all DNA-MARKING_IN#BROADCAST
+ match protocol attribute traffic-class broadcast-video
+ match protocol attribute business-relevance business-relevant
+class-map match-all DNA-MARKING_IN#BULK_DATA
+ match protocol attribute traffic-class bulk-data
+ match protocol attribute business-relevance business-relevant
+class-map match-any DNA-EZQOS_12C#TRANS_DATA
+ match dscp af23 
+ match dscp af21 
+ match dscp af22 
+class-map match-all DNA-MARKING_IN#VOICE
+ match protocol attribute traffic-class voip-telephony
+ match protocol attribute business-relevance business-relevant
+class-map match-any DNA-MARKING_IN#CONTROL_CUSTOM
+class-map match-any DNA-MARKING_IN#MM_STREAM_CUSTOM
+class-map match-any DNA-MARKING_IN#OAM_CUSTOM
+ match access-group name DNA-MARKING_IN#OAM_CUSTOM__acl
+class-map match-all DNA-MARKING_IN#REALTIME
+ match protocol attribute traffic-class real-time-interactive
+ match protocol attribute business-relevance business-relevant
+class-map match-any DNA-EZQOS_12C#MM_STREAM
+ match dscp af32 
+ match dscp af33 
+ match dscp af31 
+class-map match-any DNA-EZQOS_12C#OAM
+ match dscp cs2 
+class-map match-any DNA-EZQOS_12C#CONTROL
+ match dscp cs6 
+class-map match-any DNA-MARKING_IN#VOICE_CUSTOM
+class-map match-any DNA-EZQOS_12C#MM_CONF
+ match dscp af43 
+ match dscp af41 
+ match dscp af42 
+class-map match-any DNA-EZQOS_12C#SCAVENGER
+ match dscp cs1 
+class-map match-any DNA-EZQOS_12C#SIGNALING
+ match dscp cs3 
+class-map match-any DNA-EZQOS_12C#BROADCAST
+ match dscp cs5 
+class-map match-any DNA-EZQOS_12C#BULK_DATA
+ match dscp af12 
+ match dscp af13 
+ match dscp af11 
+class-map match-any DNA-MARKING_IN#SCAVENGER_CUSTOM
+class-map match-any DNA-MARKING_IN#SIGNALING_CUSTOM
+class-map match-any DNA-MARKING_IN#BROADCAST_CUSTOM
+class-map match-any DNA-MARKING_IN#BULK_DATA_CUSTOM
+class-map match-all DNA-MARKING_IN#TRANS_DATA
+ match protocol attribute traffic-class transactional-data
+ match protocol attribute business-relevance business-relevant
+class-map match-any DNA-EZQOS_12C#VOICE
+ match dscp ef 
+class-map match-any DNA-MARKING_IN#MM_CONF_CUSTOM
+class-map match-any DNA-MARKING_IN#TUNNELED-NBAR
+ match protocol capwap-data
+ match protocol vxlan
+!
+!
+policy-map DNA-dscp#QUEUING_OUT
+ class DNA-EZQOS_12C#VOICE
+  priority
+  police rate percent 10
+ class DNA-EZQOS_12C#BROADCAST
+  priority
+  police rate percent 10
+ class DNA-EZQOS_12C#REALTIME
+  priority
+  police rate percent 13
+ class DNA-EZQOS_12C#MM_CONF
+  bandwidth remaining percent 15 
+  fair-queue
+  random-detect dscp-based
+ class DNA-EZQOS_12C#MM_STREAM
+  bandwidth remaining percent 15 
+  fair-queue
+  random-detect dscp-based
+ class DNA-EZQOS_12C#CONTROL
+  bandwidth remaining percent 4 
+ class DNA-EZQOS_12C#SIGNALING
+  bandwidth remaining percent 3 
+ class DNA-EZQOS_12C#OAM
+  bandwidth remaining percent 3 
+ class DNA-EZQOS_12C#TRANS_DATA
+  bandwidth remaining percent 15 
+  fair-queue
+  random-detect dscp-based
+ class DNA-EZQOS_12C#BULK_DATA
+  bandwidth remaining percent 6 
+  fair-queue
+  random-detect dscp-based
+ class DNA-EZQOS_12C#SCAVENGER
+  bandwidth remaining percent 1 
+ class class-default
+  bandwidth remaining percent 38 
+  fair-queue
+  random-detect dscp-based
+policy-map DNA-MARKING_IN
+ class DNA-MARKING_IN#TUNNELED-NBAR
+ class DNA-MARKING_IN#VOICE_CUSTOM
+  set dscp ef
+ class DNA-MARKING_IN#BROADCAST_CUSTOM
+  set dscp cs5
+ class DNA-MARKING_IN#REALTIME_CUSTOM
+  set dscp cs4
+ class DNA-MARKING_IN#MM_CONF_CUSTOM
+  set dscp af41
+ class DNA-MARKING_IN#MM_STREAM_CUSTOM
+  set dscp af31
+ class DNA-MARKING_IN#CONTROL_CUSTOM
+  set dscp cs6
+ class DNA-MARKING_IN#SIGNALING_CUSTOM
+  set dscp cs3
+ class DNA-MARKING_IN#OAM_CUSTOM
+  set dscp cs2
+ class DNA-MARKING_IN#TRANS_DATA_CUSTOM
+  set dscp af21
+ class DNA-MARKING_IN#BULK_DATA_CUSTOM
+  set dscp af11
+ class DNA-MARKING_IN#SCAVENGER_CUSTOM
+  set dscp cs1
+ class DNA-MARKING_IN#VOICE
+  set dscp ef
+ class DNA-MARKING_IN#BROADCAST
+  set dscp cs5
+ class DNA-MARKING_IN#REALTIME
+  set dscp cs4
+ class DNA-MARKING_IN#MM_CONF
+  set dscp af41
+ class DNA-MARKING_IN#MM_STREAM
+  set dscp af31
+ class DNA-MARKING_IN#CONTROL
+  set dscp cs6
+ class DNA-MARKING_IN#SIGNALING
+  set dscp cs3
+ class DNA-MARKING_IN#OAM
+  set dscp cs2
+ class DNA-MARKING_IN#TRANS_DATA
+  set dscp af21
+ class DNA-MARKING_IN#BULK_DATA
+  set dscp af11
+ class DNA-MARKING_IN#SCAVENGER
+  set dscp cs1
+ class class-default
+  set dscp default
+!
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+! 
+! 
+!
+!
+interface Loopback0
+ description mgmt address
+ ip address 10.0.0.200 255.255.255.255
+ ip pim sparse-mode
+ ip router isis 
+!
+interface Loopback1
+ description terminal server address
+ ip address 10.0.0.100 255.255.255.255
+ ip router isis 
+!
+interface GigabitEthernet0/0/0
+ description ASA Uplink lan
+ ip address 10.0.1.2 255.255.255.252
+ ip pim sparse-mode
+ ip nbar protocol-discovery
+ ip authentication mode eigrp 100 md5
+ip authentication key-chain eigrp xxxxxxxxxx
+ speed 1000
+ no negotiation auto
+ performance monitor context ASSURANCE 
+ performance monitor context tesseract 
+ service-policy output DNA-dscp#QUEUING_OUT
+!
+interface GigabitEthernet0/0/1
+ description CORE Uplink lan
+ ip address 10.0.1.4 255.255.255.254
+ ip pim sparse-mode
+ ip router isis 
+ media-type rj45
+ speed 1000
+ no negotiation auto
+ performance monitor context ASSURANCE 
+ performance monitor context tesseract 
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#QUEUING_OUT
+!
+interface GigabitEthernet0/0/2
+ no ip address
+ media-type sfp
+ negotiation auto
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#QUEUING_OUT
+!
+interface Service-Engine0/4/0
+!
+interface GigabitEthernet0
+ vrf forwarding Mgmt-intf
+ no ip address
+ shutdown
+ negotiation auto
+!
+interface Async0/1/0
+ no ip address
+!
+interface Async0/1/1
+ no ip address
+!
+interface Async0/1/2
+ no ip address
+!
+interface Async0/1/3
+ no ip address
+!
+interface Async0/1/4
+ no ip address
+!
+interface Async0/1/5
+ no ip address
+!
+interface Async0/1/6
+ no ip address
+!
+interface Async0/1/7
+ no ip address
+!
+interface Async0/1/8
+ no ip address
+!
+interface Async0/1/9
+ no ip address
+!
+interface Async0/1/10
+ no ip address
+!
+interface Async0/1/11
+ no ip address
+!
+interface Async0/1/12
+ no ip address
+!
+interface Async0/1/13
+ no ip address
+!
+interface Async0/1/14
+ no ip address
+!
+interface Async0/1/15
+ no ip address
+!
+!
+router eigrp 100
+ default-metric 1000000 0 255 1 1500
+ network 10.0.0.200 0.0.0.0
+ network 10.0.1.2 0.0.0.0
+ network 10.0.1.4 0.0.0.0
+ redistribute isis level-2 metric 10000000 0 255 1 1500
+ passive-interface default
+ no passive-interface GigabitEthernet0/0/0
+ eigrp router-id 10.0.0.200
+!
+router isis
+ net 49.0000.0010.0000.0200.00
+ is-type level-2-only
+ router-id Loopback0
+ domain-password xxxxxx
+ metric-style transition
+ no hello padding point-to-point
+ log-adjacency-changes
+ redistribute eigrp 100
+ passive-interface default
+ no passive-interface GigabitEthernet0/0/1
+ no passive-interface Loopback0
+ no passive-interface Loopback1
+ default-information originate
+!
+ip http server
+ip http access-class ipv4 10
+ip http authentication local
+ip http secure-server
+ip http client source-interface Loopback0
+ip forward-protocol nd
+ip tftp source-interface Loopback0
+ip ssh time-out 60
+ip ssh authentication-retries 2
+ip ssh source-interface Loopback0
+ip ssh version 2
+ip scp server enable
+!
+!
+ip access-list extended ACL_WEBAUTH_REDIRECT
+ 40 deny   ip any host 10.10.0.200
+ 500 permit tcp any any eq www
+ 600 permit tcp any any eq 443
+ 700 permit tcp any any eq 8443
+ 800 deny   udp any any eq domain
+ 900 deny   udp any eq bootpc any eq bootps
+ip access-list extended DNA-MARKING_IN#OAM_CUSTOM__acl
+ 10 remark dns
+ 10 permit tcp any any eq domain
+ 20 permit tcp any any eq 5353
+ 30 permit udp any any eq domain
+ 40 permit udp any any eq 5353
+ip access-list extended VPN-SITE-TO-SITE-TRAFFIC
+ 10 permit ip 192.168.3.0 0.0.0.255 host 10.10.0.20
+ 20 permit ip 192.168.3.0 0.0.0.255 host 10.10.0.21
+ 30 permit ip 192.168.3.0 0.0.0.255 host 10.10.0.30
+ 40 permit ip 192.168.3.0 0.0.0.255 host 10.10.0.31
+ 50 permit udp 192.168.3.0 0.0.0.255 host 10.10.0.250 eq domain
+ 60 permit tcp 192.168.3.0 0.0.0.255 host 10.10.0.250 eq domain
+ 70 permit udp 192.168.3.0 0.0.0.255 host 10.10.0.250 eq ntp
+ 80 permit tcp 192.168.3.0 0.0.0.255 host 10.10.0.250 eq 123
+ 90 permit udp 192.168.3.0 0.0.0.255 host 10.10.0.250 range bootps bootpc
+ 100 permit tcp 192.168.3.0 0.0.0.255 host 10.10.0.250 range 67 68
+ 110 permit icmp 192.168.3.0 0.0.0.255 host 10.10.0.250
+ 120 permit ip 192.168.3.0 0.0.0.255 host 10.10.0.200
+ 130 permit ip 192.168.3.0 0.0.0.255 host 10.40.0.60
+ 140 permit ip 192.168.4.0 0.0.0.255 host 10.10.0.30
+ 150 permit ip 192.168.4.0 0.0.0.255 host 10.10.0.31
+ 160 permit udp 192.168.4.0 0.0.0.255 host 10.10.0.250 eq domain
+ 170 permit tcp 192.168.4.0 0.0.0.255 host 10.10.0.250 eq domain
+ 180 permit udp 192.168.4.0 0.0.0.255 host 10.10.0.250 eq ntp
+ 190 permit tcp 192.168.4.0 0.0.0.255 host 10.10.0.250 eq 123
+ 200 permit udp 192.168.4.0 0.0.0.255 host 10.10.0.250 range bootps bootpc
+ 210 permit tcp 192.168.4.0 0.0.0.255 host 10.10.0.250 range 67 68
+ 220 permit icmp 192.168.4.0 0.0.0.255 host 10.10.0.250
+ 230 permit ip 192.168.4.0 0.0.0.255 host 10.10.0.200
+ 240 permit ip 192.168.4.0 0.0.0.255 host 10.40.0.60
+ 250 permit udp 192.168.10.0 0.0.0.255 host 10.10.0.250 eq domain
+ 260 permit tcp 192.168.10.0 0.0.0.255 host 10.10.0.250 eq domain
+ 270 permit udp 192.168.10.0 0.0.0.255 host 10.10.0.250 range bootps bootpc
+ 280 permit tcp 192.168.10.0 0.0.0.255 host 10.10.0.250 range 67 68
+ 290 permit udp 192.168.10.0 0.0.0.255 host 10.10.0.200 range bootps bootpc
+ 300 permit tcp 192.168.10.0 0.0.0.255 host 10.10.0.200 range 67 68
+ 310 permit icmp 192.168.10.0 0.0.0.255 host 10.10.0.250
+ 320 permit ip 192.168.10.0 0.0.0.255 host 10.10.0.200
+ 330 permit icmp 192.168.10.0 0.0.0.255 host 10.40.0.60
+ 340 permit udp 192.168.20.0 0.0.0.255 host 10.10.0.250 eq domain
+ 350 permit tcp 192.168.20.0 0.0.0.255 host 10.10.0.250 eq domain
+ 360 permit udp 192.168.20.0 0.0.0.255 host 10.10.0.250 range bootps bootpc
+ 370 permit tcp 192.168.20.0 0.0.0.255 host 10.10.0.250 range 67 68
+ 380 permit udp 192.168.20.0 0.0.0.255 host 10.10.0.200 range bootps bootpc
+ 390 permit tcp 192.168.20.0 0.0.0.255 host 10.10.0.200 range 67 68
+ 400 permit icmp 192.168.20.0 0.0.0.255 host 10.10.0.250
+ 410 permit ip 192.168.20.0 0.0.0.255 host 10.10.0.200
+ 420 permit icmp 192.168.20.0 0.0.0.255 host 10.40.0.60
+ 430 deny   ip 192.168.3.0 0.0.0.255 any log
+ 440 deny   ip 192.168.4.0 0.0.0.255 any log
+ 450 deny   ip 192.168.10.0 0.0.0.255 any log
+ 460 deny   ip 192.168.20.0 0.0.0.255 any log
+ 470 permit ip any any
+!
+!
+ip radius source-interface Loopback0 
+logging source-interface Loopback0
+logging host 10.10.0.20
+ip access-list standard 10
+ 10 permit 10.0.0.0 0.255.255.255
+!
+!
+menu ALL title ^C
+****************************************
+           TERMINAL SERVER MENU
+****************************************^C
+menu ALL prompt ^Cselection: ^C
+menu ALL text 1 ASA
+menu ALL command 1 resume ASA /connect telnet ASA
+menu ALL text 2 RTR
+menu ALL command 2 resume RTR /connect telnet RTR 
+menu ALL text 3 CSW
+menu ALL command 3 resume CSW /connect telnet CSW
+menu ALL text 4 DSW
+menu ALL command 4 resume DSW /connect telnet DSW 
+menu ALL text 5 ASW
+menu ALL command 5 resume ASW /connect telnet ASW 
+menu ALL text 6 ASW2
+menu ALL command 6 resume ASW2 /connect telnet ASW2 
+menu ALL text 7 WLC
+menu ALL command 7 resume WLC /connect telnet WLC 
+menu ALL text s show open sessions
+menu ALL command s show sessions
+menu ALL options s pause
+menu ALL text c# clear session by number ie: c5
+menu ALL text e menu-exit
+menu ALL command e menu-exit
+menu ALL text d disconnect
+menu ALL command d exit
+menu ALL command c1 c1
+menu ALL command c2 c5
+menu ALL command c3 c2
+menu ALL command c4 c4
+menu ALL command c5 c5
+menu ALL command c6 c6
+menu ALL command c7 c7
+menu ALL clear-screen
+menu ALL status-line
+menu ALL line-mode
+!
+menu DEMO title ^C
+****************************************
+        DEMO TERMINAL SERVER MENU
+           username: demouser
+           password: C1sco12345
+****************************************^C
+menu DEMO prompt ^Cselection: ^C
+menu DEMO text 1 Core Switch
+menu DEMO command 1 resume CSW /connect telnet CSW
+menu DEMO text 2 9300 Stackmember 1 Automation Demo
+menu DEMO command 2 resume ASW /connect telnet ASW 
+menu DEMO text 3 9300 Stackmember 2 Automation Demo
+menu DEMO command 3 resume ASW2 /connect telnet ASW2 
+menu DEMO text s show open sessions
+menu DEMO command s show sessions
+menu DEMO options s pause
+menu DEMO text c# clear session by number ie: c1
+menu DEMO text e menu-exit
+menu DEMO command e menu-exit
+menu DEMO text d disconnect
+menu DEMO command d exit
+menu DEMO command c1 c3
+menu DEMO command c2 c5
+menu DEMO command c3 c6
+menu DEMO clear-screen
+menu DEMO status-line
+menu DEMO line-mode
+snmp-server engineID  xxxxxxx
+snmp-server group V3GROUP v3 auth read V3READ write V3WRITE access DEVICE-MGMT-ONLY
+snmp-server group AdminV3SNMP v3 auth 
+snmp-server view xxxxxxxx
+snmp-server view xxxxxxxx
+snmp-server community xxxxxxxx RW
+snmp-server community xxxxxxxx RO
+snmp-server trap-source Loopback0
+snmp-server location BASE2HQ
+snmp-server contact xxxxxxxx
+snmp-server enable traps snmp authentication linkdown linkup coldstart warmstart
+snmp-server enable traps vrrp
+snmp-server enable traps pfr
+snmp-server enable traps flowmon
+snmp-server enable traps ds1
+snmp-server enable traps entity-perf throughput-notif
+snmp-server enable traps sdwan omp system policy security
+snmp-server enable traps ds3
+snmp-server enable traps call-home message-send-fail server-fail
+snmp-server enable traps tty
+snmp-server enable traps eigrp
+snmp-server enable traps ospf state-change
+snmp-server enable traps ospf errors
+snmp-server enable traps ospf retransmit
+snmp-server enable traps ospf lsa
+snmp-server enable traps ospf cisco-specific state-change nssa-trans-change
+snmp-server enable traps ospf cisco-specific state-change shamlink interface
+snmp-server enable traps ospf cisco-specific state-change shamlink neighbor
+snmp-server enable traps ospf cisco-specific errors
+snmp-server enable traps ospf cisco-specific retransmit
+snmp-server enable traps ospf cisco-specific lsa
+snmp-server enable traps casa
+snmp-server enable traps license
+snmp-server enable traps smart-license
+snmp-server enable traps cef resource-failure peer-state-change peer-fib-state-change inconsistency
+snmp-server enable traps memory bufferpeak
+snmp-server enable traps config-copy
+snmp-server enable traps config
+snmp-server enable traps config-ctid
+snmp-server enable traps dhcp
+snmp-server enable traps dsp card-status
+snmp-server enable traps dsp oper-state
+snmp-server enable traps dsp video-usage
+snmp-server enable traps dsp video-out-of-resource
+snmp-server enable traps fru-ctrl
+snmp-server enable traps entity
+snmp-server enable traps event-manager
+snmp-server enable traps frame-relay multilink bundle-mismatch
+snmp-server enable traps frame-relay
+snmp-server enable traps frame-relay subif
+snmp-server enable traps hsrp
+snmp-server enable traps pimstdmib neighbor-loss invalid-register invalid-join-prune rp-mapping-change interface-election
+snmp-server enable traps ipmulticast
+snmp-server enable traps isis
+snmp-server enable traps ip local pool
+snmp-server enable traps msdp
+snmp-server enable traps mvpn
+snmp-server enable traps ospfv3 state-change
+snmp-server enable traps ospfv3 errors
+snmp-server enable traps pim neighbor-change rp-mapping-change invalid-pim-message
+snmp-server enable traps pppoe
+snmp-server enable traps cpu threshold
+snmp-server enable traps rsvp
+snmp-server enable traps syslog
+snmp-server enable traps l2tun session
+snmp-server enable traps l2tun pseudowire status
+snmp-server enable traps aaa_server
+snmp-server enable traps atm subif
+snmp-server enable traps pki
+snmp-server enable traps ethernet evc status create delete
+snmp-server enable traps ether-oam
+snmp-server enable traps ethernet cfm cc mep-up mep-down cross-connect loop config
+snmp-server enable traps ethernet cfm crosscheck mep-missing mep-unknown service-up
+snmp-server enable traps entity-state
+snmp-server enable traps entity-qfp mem-res-thresh throughput-notif
+snmp-server enable traps adslline
+snmp-server enable traps vdsl2line
+snmp-server enable traps entity-sensor
+snmp-server enable traps flash insertion removal lowspace
+snmp-server enable traps srp
+snmp-server enable traps entity-diag boot-up-fail hm-test-recover hm-thresh-reached scheduled-test-fail
+snmp-server enable traps isdn call-information
+snmp-server enable traps isdn layer2
+snmp-server enable traps isdn chan-not-avail
+snmp-server enable traps isdn ietf
+snmp-server enable traps cnpd
+snmp-server enable traps mpls rfc ldp
+snmp-server enable traps mpls ldp
+snmp-server enable traps mpls rfc traffic-eng
+snmp-server enable traps mpls traffic-eng
+snmp-server enable traps mpls fast-reroute protected
+snmp-server enable traps bfd
+snmp-server enable traps bgp cbgp2
+snmp-server enable traps nhrp nhs
+snmp-server enable traps nhrp nhc
+snmp-server enable traps nhrp nhp
+snmp-server enable traps nhrp quota-exceeded
+snmp-server enable traps otn
+snmp-server enable traps pw vc
+snmp-server enable traps ipsla
+snmp-server enable traps sonet
+snmp-server enable traps dlsw
+snmp-server enable traps resource-policy
+snmp-server enable traps lisp
+snmp-server enable traps stpx inconsistency root-inconsistency loop-inconsistency
+snmp-server enable traps c3g
+snmp-server enable traps LTE
+snmp-server enable traps vtp
+snmp-server enable traps vlancreate
+snmp-server enable traps vlandelete
+snmp-server enable traps bridge newroot topologychange
+snmp-server enable traps port-security
+snmp-server enable traps auth-framework sec-violation
+snmp-server enable traps ike policy add
+snmp-server enable traps ike policy delete
+snmp-server enable traps ike tunnel start
+snmp-server enable traps ike tunnel stop
+snmp-server enable traps ipsec cryptomap add
+snmp-server enable traps ipsec cryptomap delete
+snmp-server enable traps ipsec cryptomap attach
+snmp-server enable traps ipsec cryptomap detach
+snmp-server enable traps ipsec tunnel start
+snmp-server enable traps ipsec tunnel stop
+snmp-server enable traps ipsec too-many-sas
+snmp-server enable traps gdoi gm-start-registration
+snmp-server enable traps gdoi gm-registration-complete
+snmp-server enable traps gdoi gm-re-register
+snmp-server enable traps gdoi gm-rekey-rcvd
+snmp-server enable traps gdoi gm-rekey-fail
+snmp-server enable traps gdoi ks-rekey-pushed
+snmp-server enable traps gdoi gm-incomplete-cfg
+snmp-server enable traps gdoi ks-no-rsa-keys
+snmp-server enable traps gdoi ks-new-registration
+snmp-server enable traps gdoi ks-reg-complete
+snmp-server enable traps gdoi ks-role-change
+snmp-server enable traps gdoi ks-gm-deleted
+snmp-server enable traps gdoi ks-peer-reachable
+snmp-server enable traps gdoi ks-peer-unreachable
+snmp-server enable traps firewall serverstatus
+snmp-server enable traps bulkstat collection transfer
+snmp-server enable traps alarms informational
+snmp-server enable traps vrfmib vrf-up vrf-down vnet-trunk-up vnet-trunk-down
+snmp-server enable traps ethernet cfm alarm
+snmp-server enable traps rf
+snmp-server enable traps transceiver all
+snmp-server enable traps mpls vpn
+snmp-server enable traps mpls rfc vpn
+snmp-server host 10.10.0.21 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.1 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.2 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.20 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.200 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.3 version 3 auth xxxxxxxx 
+snmp-server host 10.10.0.20 version 2c xxxxxxxx 
+snmp-server host 10.10.0.20 version 2c xxxxxxxx 
+snmp-server host 10.20.0.200 version 2c xxxxxxxx 
+!
+!
+!
+radius-server attribute 6 on-for-login-auth
+radius-server attribute 6 support-multiple
+radius-server attribute 8 include-in-access-req
+radius-server attribute 25 access-request include
+radius-server attribute 31 mac format ietf upper-case
+radius-server attribute 31 send nas-port-detail mac-only
+radius-server dead-criteria time 5 tries 3
+radius-server deadtime 3
+!
+radius server dnac-radius_10.10.0.200
+ address ipv4 10.10.0.200 auth-port 1812 acct-port 1813
+ timeout 4
+ retransmit 3
+ automate-tester username dummy ignore-acct-port probe-on
+  pac key 7 xxxxxxxx
+!
+!
+control-plane
+!
+cts role-based sgt-map 10.10.0.1 sgt 29
+cts role-based sgt-map 10.10.0.7 sgt 29
+cts role-based sgt-map 10.10.0.10 sgt 29
+cts role-based sgt-map 10.10.0.20 sgt 29
+cts role-based sgt-map 10.10.0.21 sgt 29
+cts role-based sgt-map 10.10.0.22 sgt 29
+cts role-based sgt-map 10.10.0.30 sgt 29
+cts role-based sgt-map 10.10.0.31 sgt 29
+cts role-based sgt-map 10.10.0.32 sgt 30
+cts role-based sgt-map 10.10.0.40 sgt 28
+cts role-based sgt-map 10.10.0.100 sgt 28
+cts role-based sgt-map 10.10.0.200 sgt 27
+cts role-based sgt-map 10.10.0.250 sgt 26
+cts role-based sgt-map 10.10.0.251 sgt 26
+cts role-based sgt-map 10.10.0.252 sgt 14
+cts role-based enforcement
+banner login ^C
+  Session On $(hostname) Is Monitored!!!
+  *****************************LEGAL WARNING************************************
+  * This device is part of a Demonstration computer network and is provided for*
+  * official use by authorized users ONLY. Any information, documents, or      *
+  * materials in the network are the property of this firm. Unauthorized use,  *
+  * duplication, or disclosure of information or systems in this network is    *
+  * strictly prohibited by Federal Law (18 USC 10130). Use of this network     *
+  * constitutes consent to monitoring which may be released to firm management *
+  * and/or law enforcement agencies and may result in disciplinary action,     *
+  * civil action, and/or criminal prosecution.                                 *
+  ****************************LEGAL WARNING*************************************
+^C
+alias exec c1 disconnect ASA
+alias exec c2 disconnect RTR
+alias exec c3 disconnect CSW
+alias exec c4 disconnect DSW
+alias exec c5 disconnect ASW
+alias exec c6 disconnect ASW2
+alias exec c7 disconnect WLC
+parser view ALLOWEDCMDS
+secret 9 xxxxxxxx
+ commands exec include connect
+ commands exec include telnet
+ commands exec include menu
+ commands exec exclude configure terminal
+ commands exec include configure
+ commands exec include resume /connect
+ commands exec include resume
+ commands exec include disconnect
+ commands exec include show hosts
+ commands exec include show sessions
+ commands exec exclude show running-config
+ commands exec include show
+ commands exec include clear line
+ commands exec include clear
+!
+!
+!
+line con 0
+ exec-timeout 0 0
+ privilege level 15
+ authorization exec CON-VTY
+ logging synchronous
+ login xxxxxx
+ stopbits 1
+line aux 0
+line 0/1/0 0/1/15
+ absolute-timeout 45
+ login xxxxxx
+ no exec
+ transport input all
+ transport output all
+ stopbits 1
+line vty 0 4
+ exec-timeout 0 0
+ authorization exec CON-VTY
+ logging synchronous
+ login xxxxxx
+ terminal-type mon
+ length 0
+ transport input ssh
+line vty 5 15
+ exec-timeout 0 0
+ authorization exec CON-VTY
+ logging synchronous
+ login xxxxxx
+ terminal-type mon
+ length 0
+ transport input ssh
+!
+call-home
+ ! If contact email address in call-home is configured as sch-smart-licensing@cisco.com
+ ! the email address configured in Cisco Smart License Portal will be used as contact email address to send SCH notifications.
+ contact-email-addr sch-smart-licensing@cisco.com
+ profile "CiscoTAC-1"
+  active
+  destination transport-method http
+ntp authentication-key xxxxxxxx
+ntp authenticate
+ntp trusted-key xxxxxxx
+ntp source Loopback0
+ntp server 10.10.0.250
+!
+!
+!
+!
+!
+!
+!
+pnp profile pnp-zero-touch
+ transport https host pnpserver.sda.base2hq.com port 443
+telemetry ietf subscription 602
+ encoding encode-tdl
+ filter tdl-uri /services;serviceName=ios_emul_oper/lisp_routers;top_id=0/sessions
+ receiver-type protocol
+ source-address 10.0.0.200
+ stream native
+ update-policy periodic 360000
+ receiver name DNAC_ASSURANCE_RECEIVER
+telemetry ietf subscription 603
+ encoding encode-tdl
+ filter tdl-uri /services;serviceName=iosevent/lisp_tcp_session_state
+ receiver-type protocol
+ source-address 10.0.0.200
+ stream native
+ update-policy on-change
+ receiver name DNAC_ASSURANCE_RECEIVER
+telemetry ietf subscription 604
+ encoding encode-tdl
+ filter nested-uri /services;serviceName=ios_emul_oper/lisp_routers;top_id=0/instances;iid=0/af;iaftype=LISP_TDL_IAF_IPV4/lisp_publisher
+ receiver-type protocol
+ source-address 10.0.0.200
+ stream native
+ update-policy periodic 360000
+ receiver name DNAC_ASSURANCE_RECEIVER
+telemetry ietf subscription 605
+ encoding encode-tdl
+ filter tdl-uri /services;serviceName=iosevent/lisp_pubsub_session_state
+ receiver-type protocol
+ source-address 10.0.0.200
+ stream native
+ update-policy on-change
+ receiver name DNAC_ASSURANCE_RECEIVER
+telemetry receiver protocol DNAC_ASSURANCE_RECEIVER
+ host ip-address 10.10.0.20 25103
+ protocol tls-native profile sdn-network-infra-iwan
+netconf-yang
+end
+
