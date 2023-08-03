@@ -1,10 +1,18 @@
 #!/usr/bin/env python2
 
-
-# developed by Gabi Zapodeanu, TME, ENBU, Cisco Systems
-
+####################################################################################
+# project: DNAC-ComplianceMon
+# module: utils.py
+# author: kebaldwi@cisco.com
+# use case: Simple Check of XML audit files against configuration
+# developers:
+#            Gabi Zapodeanu, TME, Enterprise Networks, Cisco Systems
+#            Keith Baldwin, TSA, EN Architectures, Cisco Systems
+####################################################################################
 
 # the utils module includes common utilized utility functions
+
+#     ------------------------------- IMPORTS -------------------------------
 
 import json
 import os
@@ -21,6 +29,8 @@ import datetime, time  # needed for epoch time conversion
 from urllib3.exceptions import InsecureRequestWarning
 
 urllib3.disable_warnings(InsecureRequestWarning)  # Disable insecure https warnings
+
+#     ----------------------------- DEFINITIONS -----------------------------
 
 def pprint(json_data):
     """

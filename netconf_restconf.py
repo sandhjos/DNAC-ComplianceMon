@@ -1,6 +1,18 @@
+#!/usr/bin/env python3
 
+####################################################################################
+# project: DNAC-ComplianceMon
+# module: netconf_restconf.py
+# author: kebaldwi@cisco.com
+# use case: Simple Check of XML audit files against configuration
+# developers:
+#            Gabi Zapodeanu, TME, Enterprise Networks, Cisco Systems
+#            Keith Baldwin, TSA, EN Architectures, Cisco Systems
+####################################################################################
 
-# developed by Gabi Zapodeanu, TME, Enterprise Networks, Cisco
+# This netconf and restconf module is written to address netconf and restconf config of devices
+
+#     ------------------------------- IMPORTS -------------------------------
 
 
 import requests
@@ -18,6 +30,7 @@ from requests.auth import HTTPBasicAuth  # for Basic Auth
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)  # Disable insecure https warnings
 
+#     ----------------------------- DEFINITIONS -----------------------------
 
 def netconf_get_hostname(ios_xe_host, ios_xe_port, ios_xe_user, ios_xe_pass):
     """

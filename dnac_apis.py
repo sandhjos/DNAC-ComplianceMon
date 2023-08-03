@@ -1,8 +1,18 @@
 #!/usr/bin/env python3
 
+####################################################################################
+# project: DNAC-ComplianceMon
+# module: dnac_apis.py
+# author: kebaldwi@cisco.com
+# use case: Simple Check of XML audit files against configuration
+# developers:
+#            Gabi Zapodeanu, TME, Enterprise Networks, Cisco Systems
+#            Keith Baldwin, TSA, EN Architectures, Cisco Systems
+####################################################################################
 
-# developed by Gabi Zapodeanu, TME, Enterprise Networks, Cisco Systems
+# the dnac_apis module includes common utilized dna center api functions
 
+#     ------------------------------- IMPORTS -------------------------------
 
 import requests
 import json
@@ -19,6 +29,7 @@ urllib3.disable_warnings(InsecureRequestWarning)  # disable insecure https warni
 
 DNAC_AUTH = HTTPBasicAuth(DNAC_USER, DNAC_PASS)
 
+#     ----------------------------- DEFINITIONS -----------------------------
 
 def pprint(json_data):
     """
