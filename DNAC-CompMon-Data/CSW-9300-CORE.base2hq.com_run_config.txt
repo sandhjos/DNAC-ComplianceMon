@@ -15,7 +15,7 @@ service sequence-numbers
 service call-home
 no platform punt-keepalive disable-kernel-core
 !
-hostname CSW-9300-CORE
+hostname CSW-9300-CORE-hahaha
 !
 !
 vrf definition Mgmt-vrf
