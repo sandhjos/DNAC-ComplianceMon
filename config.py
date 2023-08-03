@@ -12,8 +12,8 @@
 
 # Update this section with the DNA Center server info and user information
 DNAC_URL = 'https://10.10.0.20'
-DNAC_USER = 'admin'
-DNAC_PASS = 'Ghter+_)('
+DNAC_USER = 'demouser'
+DNAC_PASS = 'C1sco12345'
 
 # File location to be used for configurations
 CONFIG_PATH = f"."
