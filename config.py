@@ -18,3 +18,4 @@ DNAC_PASS = 'C1sco12345'
 # File location to be used for configurations
 CONFIG_PATH = f"."
 CONFIG_STORE = f"DNAC-CompMon-Data"
+COMPLIANCE_STORE = f"PrimeComplianceChecks"
