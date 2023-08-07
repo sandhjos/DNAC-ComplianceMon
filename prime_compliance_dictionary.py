@@ -16,32 +16,14 @@
 #     ------------------------------- IMPORTS -------------------------------
 
 import os
-import sys
 import os.path
-import datetime
-import time
-
-import utils
-import difflib
-import re  # needed for regular expressions matching
-import logging
-import warnings
-
-
-import json
-import xml
-import xml.dom.minidom
-import json
 import xml.etree.ElementTree as ET
 import xmltodict
-import select
-import socket  # needed for IPv4 validation
-import ipaddress  # needed for IPv4 address validation
 
 from config import CONFIG_PATH, CONFIG_STORE, COMPLIANCE_STORE
 
 AUDIT_DATABASE = {}
-#COMPLIANCE_DIRECTORY = "IOSXE"
+COMPLIANCE_DIRECTORY = "IOSXE"
 
 #     ----------------------------- DEFINITIONS -----------------------------
 
