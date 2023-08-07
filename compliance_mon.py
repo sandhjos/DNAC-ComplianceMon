@@ -30,10 +30,13 @@ import warnings
 import utils
 import dnac_apis
 
+import prime_compliance_dictionary
+
 from requests.auth import HTTPBasicAuth  # for Basic Auth
 from urllib3.exceptions import InsecureRequestWarning  # for insecure https warnings
 
-from config import DNAC_URL, DNAC_PASS, DNAC_USER, CONFIG_PATH, CONFIG_STORE
+from config import DNAC_URL, DNAC_PASS, DNAC_USER, CONFIG_PATH, CONFIG_STORE, COMPLIANCE_STORE
+
 
 urllib3.disable_warnings(InsecureRequestWarning)  # disable insecure https warnings
 
@@ -125,6 +128,15 @@ def compare_configs(cfg1, cfg2):
 def main():
     os_setup()
     config_library(CONFIG_PATH,CONFIG_STORE)
+    
+    AUDIT_DATABASE = {}
+    COMPLIANCE_DIRECTORY = "IOSXE"
+
+    CONFIG_DATA = os.path.join(CONFIG_PATH, CONFIG_STORE)
+    COMP_CHECKS = os.path.join(CONFIG_PATH, COMPLIANCE_STORE, COMPLIANCE_DIRECTORY)
+    
+    AUDIT_DATABASE = all_files_into_dict(COMP_CHECKS)
+    print(f"Audit Rules from Prime loaded for processing against configs\n\n",AUDIT_DATABASE)
 
     temp_run_config = "temp_run_config.txt"
 

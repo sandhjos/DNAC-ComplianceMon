@@ -137,9 +137,9 @@ def all_files_into_dict(DIRECTORY):
 # calls in the body of the main program
 
 AUDIT_DATABASE = {}
-COMPLIANCE_DIRECTORY = "IOSXE"
-CONFIG_DATA = os.path.join(CONFIG_PATH, CONFIG_STORE)
-COMP_CHECKS = os.path.join(CONFIG_PATH, COMPLIANCE_STORE, COMPLIANCE_DIRECTORY)
+#COMPLIANCE_DIRECTORY = "IOSXE"
+#CONFIG_DATA = os.path.join(CONFIG_PATH, CONFIG_STORE)
+#COMP_CHECKS = os.path.join(CONFIG_PATH, COMPLIANCE_STORE, COMPLIANCE_DIRECTORY)
 
 # Single file test (depricated)
 #xml_file = xml_file_reader(COMP_CHECKS)
@@ -148,5 +148,5 @@ COMP_CHECKS = os.path.join(CONFIG_PATH, COMPLIANCE_STORE, COMPLIANCE_DIRECTORY)
 #AUDIT_DATABASE.update(dictionary_builder(comp_rule,0))
 
 # Multi file test
-AUDIT_DATABASE = all_files_into_dict(COMP_CHECKS)
-print(f"And now loaded into an object for processing against configs\n\n",AUDIT_DATABASE)
+#AUDIT_DATABASE = all_files_into_dict(COMP_CHECKS)
+#print(f"And now loaded into an object for processing against configs\n\n",AUDIT_DATABASE)
