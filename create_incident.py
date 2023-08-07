@@ -1,7 +1,17 @@
+#!/usr/bin/env python3
 
+####################################################################################
+# project: DNAC-ComplianceMon
+# module: create_incident.py
+# author: gzapodea@cisco.com
+# use case: Simple Check of XML audit files against configuration
+# developers:
+#            Gabi Zapodeanu, TME, Enterprise Networks, Cisco Systems
+####################################################################################
 
-# developed by Gabi Zapodeanu, TME, Enterprise Networks, Cisco Systems
+# the apis in this module includes common utilized SNOW api functions
 
+#     ------------------------------- IMPORTS -------------------------------
 
 import requests
 import json
