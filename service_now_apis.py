@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 
-# developed by Gabi Zapodeanu, TSA, GPO, Cisco Systems
-
+####################################################################################
+# project: DNAC-ComplianceMon
+# module: service_now_apis.py
+# author: gzapodea@cisco.com
+# use case: Simple Check of XML audit files against configuration
+# developers:
+#            Gabi Zapodeanu, TME, Enterprise Networks, Cisco Systems
+####################################################################################
 
 # This file contains the ServiceNow functions to be used during the demo
+
+#     ------------------------------- IMPORTS -------------------------------
 
 import requests
 import json

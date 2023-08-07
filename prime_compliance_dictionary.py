@@ -2,7 +2,7 @@
 
 ####################################################################################
 # project: DNAC-ComplianceMon
-# module: primecompliance.py
+# module: prime_compliance_dictionary.py
 # author: kebaldwi@cisco.com
 # use case: Simple Check of XML audit files against configuration
 # developers:
@@ -10,9 +10,11 @@
 #            Keith Baldwin, TSA, EN Architectures, Cisco Systems
 ####################################################################################
 
-# This program is written to meet the requirements set out in the README.md
+# This program is written to ingest all the XML files exported from Prime and build
+# A dictionary of auditing rules to be used to check configurations
 
 #     ------------------------------- IMPORTS -------------------------------
+
 import os
 import sys
 import os.path
@@ -131,13 +133,15 @@ def all_files_into_dict(DIRECTORY):
 
 #     ----------------------------- MAIN -----------------------------
 
-AUDIT_DATABASE = {}
+# For testing purposes use the following but comment out and include the same 
+# calls in the body of the main program
 
+AUDIT_DATABASE = {}
 COMPLIANCE_DIRECTORY = "IOSXE"
 CONFIG_DATA = os.path.join(CONFIG_PATH, CONFIG_STORE)
 COMP_CHECKS = os.path.join(CONFIG_PATH, COMPLIANCE_STORE, COMPLIANCE_DIRECTORY)
 
-# Single file test 
+# Single file test (depricated)
 #xml_file = xml_file_reader(COMP_CHECKS)
 #comp_rule = xmltodict.parse(xml_file)
 #print(f"Read the XML Compliance Rule:\n\n",comp_rule,"\n")

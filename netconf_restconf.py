@@ -3,11 +3,10 @@
 ####################################################################################
 # project: DNAC-ComplianceMon
 # module: netconf_restconf.py
-# author: kebaldwi@cisco.com
+# author: gzapodea@cisco.com
 # use case: Simple Check of XML audit files against configuration
 # developers:
 #            Gabi Zapodeanu, TME, Enterprise Networks, Cisco Systems
-#            Keith Baldwin, TSA, EN Architectures, Cisco Systems
 ####################################################################################
 
 # This netconf and restconf module is written to address netconf and restconf config of devices

@@ -3,11 +3,10 @@
 ####################################################################################
 # project: DNAC-ComplianceMon
 # module: dnac_apis.py
-# author: kebaldwi@cisco.com
+# author: gzapodea@cisco.com
 # use case: Simple Check of XML audit files against configuration
 # developers:
 #            Gabi Zapodeanu, TME, Enterprise Networks, Cisco Systems
-#            Keith Baldwin, TSA, EN Architectures, Cisco Systems
 ####################################################################################
 
 # the dnac_apis module includes common utilized dna center api functions

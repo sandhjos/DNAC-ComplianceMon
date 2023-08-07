@@ -3,6 +3,7 @@
 ####################################################################################
 # project: DNAC-ComplianceMon
 # author: kebaldwi@cisco.com
+# module: compliance_mon.py
 # use case: Simple Check of XML audit files against configuration
 # developers:
 #            Gabi Zapodeanu, TME, Enterprise Networks, Cisco Systems
