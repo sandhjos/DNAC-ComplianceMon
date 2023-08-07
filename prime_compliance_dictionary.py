@@ -40,6 +40,9 @@ import ipaddress  # needed for IPv4 address validation
 
 from config import CONFIG_PATH, CONFIG_STORE, COMPLIANCE_STORE
 
+AUDIT_DATABASE = {}
+#COMPLIANCE_DIRECTORY = "IOSXE"
+
 #     ----------------------------- DEFINITIONS -----------------------------
 
 # Build Audit Rule from Rules in Array
@@ -136,7 +139,7 @@ def all_files_into_dict(DIRECTORY):
 # For testing purposes use the following but comment out and include the same 
 # calls in the body of the main program
 
-AUDIT_DATABASE = {}
+#AUDIT_DATABASE = {}
 #COMPLIANCE_DIRECTORY = "IOSXE"
 #CONFIG_DATA = os.path.join(CONFIG_PATH, CONFIG_STORE)
 #COMP_CHECKS = os.path.join(CONFIG_PATH, COMPLIANCE_STORE, COMPLIANCE_DIRECTORY)
