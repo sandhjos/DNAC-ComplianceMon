@@ -68,15 +68,14 @@ def dictionary_builder(comp_rule):
         msg = comp_rule['CustomPolicy']['Rules']['Rule']['Conditions']['Condition']['Violation']['Message']
     else:
         msg = "none"
-    #print("\n\nCheck ",scope," ",operator," ",value," if in violation present: ",msg)
     RULE = {'Scope': scope, "Operator": operator, "Value": value, "Message": msg}
     return RULE
 
 # Build a Dictionary of Multiple Dictionaries for auditing CONFIGs
 def multi_dictionary_builder(comp_rule):
-    subcounter = 0
-    RULE = {}
-    for i in range(len(comp_rule['CustomPolicy']['Rules']['Rule']['Conditions'])):
+    RULE = []
+    rule = {}
+    for i in range(len(comp_rule['CustomPolicy']['Rules']['Rule']['Conditions']['Condition'])):
         if (comp_rule['CustomPolicy']['Rules']['Rule']['Conditions']['Condition'][i]['Scope']):
             scope = comp_rule['CustomPolicy']['Rules']['Rule']['Conditions']['Condition'][i]['Scope']
         else:
@@ -93,13 +92,8 @@ def multi_dictionary_builder(comp_rule):
             msg = comp_rule['CustomPolicy']['Rules']['Rule']['Conditions']['Condition'][i]['Violation']['Message']
         else:
             msg = "none"
-        #scope = comp_rule['CustomPolicy']['Rules']['Rule']['Conditions']['Condition'][i]['Scope']
-        print("\n\nCheck ",scope," ",operator," ",value," if in violation present: ",msg)
-        rule = {subcounter :{'Scope': scope, "Operator": operator, "Value": value, "Message": msg}}
-        rule.update(rule)
-        subcounter = subcounter + 1
-    RULE = {subcounter : rule}
-    print(RULE)
+        rule = {'Scope': scope, "Operator": operator, "Value": value, "Message": msg}
+        RULE.append(rule)
     return RULE
 
 # Read one XML file
