@@ -13,7 +13,7 @@ service sequence-numbers
 service call-home
 no platform punt-keepalive disable-kernel-core
 !
-hostname ASW-C9300-48-DEMO
+hostname ASW-C9300-48-DEMO-hahahahaha
 !
 !
 vrf definition Mgmt-vrf
