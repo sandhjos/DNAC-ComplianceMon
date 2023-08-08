@@ -93,6 +93,7 @@ def compare_configs(cfg1, cfg2):
     diff_output = ''
 
     for line in d:
+        diff_output += line
         if line.find('Current configuration') == -1:
             if line.find('Last configuration change') == -1:
                 if (line.find('+++') == -1) and (line.find('---') == -1):
