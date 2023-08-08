@@ -30,7 +30,8 @@ def get_data_by_number(data, number):
     else:
         return [item]
 
-def compare_rules(cfg1, audit_dict):
+# This function will compare 
+def compare_rules(cfg, audit_item, i):
     """
     we will use the audit dictionary created to compare 
     against the configuration presented to determine if the
@@ -40,17 +41,52 @@ def compare_rules(cfg1, audit_dict):
     :return: text with config lines that violated in a dictionary
     """
     # open the old and new configuration fields
-    f1 = open(cfg1, 'r')
+    f1 = open(cfg, 'r')
+    cfg = f1.readlines()
+    f1.close()
+    # create a diff_list that will include all the lines that are non compliant
+    violation_output = ''
+    scope = audit_item['Scope']
+    operator = audit_item['Operator']
+    value = audit_item['Value']
+    message = audit_item['Message']
+    # for loop for a match in all_config
+    if (scope == 'ALL_CONFIG') and ('MATCHES' in operator):
+        for line in cfg:
+            if value in line:
+                violation_output = "test: "+str(i)+" -> "+message
+    return violation_output
+
+# This function will compare 
+def audit(cfg, data):
+    """
+    we will use the audit dictionary created to compare 
+    against the configuration presented to determine if the
+    configuration has violations
+    :param cfg: configuration file path and filename
+    :param audit_dict: imported dictionary of audit rules
+    :return: text with config lines that violated in a dictionary
+    """
+    # open the old and new configuration fields
+    f1 = open(cfg, 'r')
     cfg = f1.readlines()
     f1.close()
     # create a diff_list that will include all the lines that are non compliant
     violation_list = []
     violation_output = ''
-    #for line in cfg:
-    print(audit_dict[1])
-    for i in range(len(audit_dict)):
-        print ("\n",audit_dict,"\n")
-    return 
+    for i in range(len(data)):
+        audit_item = get_data_by_number(data, i)
+        scope = audit_item['Scope']
+        operator = audit_item['Operator']
+        value = audit_item['Value']
+        message = audit_item['Message']
+        # for loop for a match in all_config
+        if (scope == 'ALL_CONFIG') and ('MATCHES' in operator):
+            for line in cfg:
+                if value in line:
+                    violation_output = "test: "+str(i)+" -> "+message
+                    violation_list.append(violation_output)
+    return violation_list
 
 def main():
     data = {}
@@ -58,9 +94,8 @@ def main():
     data.update(dataset)
     
     cfg = "./DNAC-CompMon-Data/ASW-C9300-48-DEMO.base2hq.com_run_config.txt"
-    #compare_rules(cfg, test)
-    #scopes = [v['Scope'] for k, v in audit_dict.items()]
-    
+    violation_list = []
+
     number = 10
     items = get_data_by_number(data, number)
     
@@ -71,6 +106,12 @@ def main():
         message = item['Message']
     
     print(f"Scope: {scope}, Operator: {operator}, Value: {value}, Message: {message}")
+    
+    print(compare_rules(cfg, item, number))
+
+    #print(len(data)) #88
+    #violation_list.append(audit(cfg, data))
+    #print("\n\n",violation_list)
 
 if __name__ == '__main__':
     main()
