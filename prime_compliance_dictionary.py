@@ -52,7 +52,8 @@ def dictionary_builder(comp_rule):
     else:
         value = "none"
     if ('Violation' in comp_rule['CustomPolicy']['Rules']['Rule']['Conditions']['Condition']):
-        msg = comp_rule['CustomPolicy']['Rules']['Rule']['Conditions']['Condition']['Violation']['Message']
+        msg_original = comp_rule['CustomPolicy']['Rules']['Rule']['Conditions']['Condition']['Violation']['Message']
+        msg = msg_original.replace("'", "")
     else:
         msg = "none"
     RULE = {'Scope': scope, "Operator": operator, "Value": value, "Message": msg}
@@ -76,7 +77,8 @@ def multi_dictionary_builder(comp_rule):
         else:
            value = "none"
         if ('Violation' in comp_rule['CustomPolicy']['Rules']['Rule']['Conditions']['Condition'][i]):
-            msg = comp_rule['CustomPolicy']['Rules']['Rule']['Conditions']['Condition'][i]['Violation']['Message']
+            msg_original = comp_rule['CustomPolicy']['Rules']['Rule']['Conditions']['Condition'][i]['Violation']['Message']
+            msg = msg_original.replace("'", "")
         else:
             msg = "none"
         rule = {'Scope': scope, "Operator": operator, "Value": value, "Message": msg}
