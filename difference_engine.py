@@ -81,28 +81,102 @@ def audit(cfg, data):
                 scope = (sub_dict['Scope'])
                 operator = (sub_dict['Operator'])
                 value = (sub_dict['Value'])
-                print(value)
+                if value.startswith("*"):
+                    value = "." + value[1:]
+                elif value.startswith("^*"):
+                    value = "^." + value[2:]
+                regex = re.compile(value)
                 message = (sub_dict['Message'])
                 # for loop for a match in all_config
                 for line in cfg:
-                    if value in line:
+                    if regex.search(line):
                         violation_output = "test "+str(i)+": -> Passed"
                         break
                     else:
-                        violation_output = "test "+str(i)+": -> searchstring: "+value+" Violation Msg: "+message
+                        violation_output = "test "+str(i)+": -> search: '"+value+"' -> Violation Msg: "+message
                 violation_list.append(violation_output)                    
         if isinstance(data[i], dict):
             scope = data[i]['Scope']
             operator = data[i]['Operator']
             value = data[i]['Value']
+            if value.startswith("*"):
+                value = "." + value[1:]
+            elif value.startswith("^*"):
+                value = "^." + value[2:]
+            regex = re.compile(value)
             message = data[i]['Message']
             # for loop for a match in all_config
             for line in cfg:
-                if value in line:
+                if regex.search(line):
+                    #if value in line:
                     violation_output = "test "+str(i)+": -> Passed"
                     break
                 else:
-                    violation_output = "test "+str(i)+": -> searchstring: "+value+" Violation Msg: "+message
+                    violation_output = "test "+str(i)+": -> search: '"+value+"' -> Violation Msg: "+message
+            violation_list.append(violation_output)
+    return violation_list
+
+def auditv2(cfg, data):
+    """
+    we will use the audit dictionary created to compare 
+    against the configuration presented to determine if the
+    configuration has violations
+    :param cfg: configuration file path and filename
+    :param audit_dict: imported dictionary of audit rules
+    :return: text with config lines that violated in a dictionary
+    """
+    # open the old and new configuration fields
+    f1 = open(cfg, 'r')
+    cfg = f1.readlines()
+    f1.close()
+    # create a diff_list that will include all the lines that are non compliant
+    violation_list = []
+    violation_output = ''
+    for i in range(0, (len(data)-1)):
+        if isinstance(data[i], list):
+            for sub_dict in data[i]:
+                scope = (sub_dict['Scope'])
+                operator = (sub_dict['Operator'])
+                value = (sub_dict['Value'])
+                if value.startswith("*"):
+                    value = "." + value[1:]
+                elif value.startswith("^*"):
+                    value = "^." + value[2:]
+                message = (sub_dict['Message'])
+                if scope == "ALL_CONFIG":
+                    regex = re.compile(value)
+                if scope == "SUBMODE_CONFIG":
+                    regex = re.compile(value)
+                elif scope == "PREVIOUS_SUBMODE_CONFIG":
+                    pattern = "(?s)(?<=^interface.*\n)(" + value + ")"
+                else:
+                    continue
+                # for loop for a match in all_config
+                for line in cfg:
+                    if regex.search(line):
+                        violation_output = "test "+str(i)+": -> Passed"
+                        break
+                    else:
+                        violation_output = "test "+str(i)+": -> search: '"+value+"' -> Violation Msg: "+message
+                violation_list.append(violation_output)                    
+        if isinstance(data[i], dict):
+            scope = data[i]['Scope']
+            operator = data[i]['Operator']
+            value = data[i]['Value']
+            if value.startswith("*"):
+                value = "." + value[1:]
+            elif value.startswith("^*"):
+                value = "^." + value[2:]
+            regex = re.compile(value)
+            message = data[i]['Message']
+            # for loop for a match in all_config
+            for line in cfg:
+                if regex.search(line):
+                    #if value in line:
+                    violation_output = "test "+str(i)+": -> Passed"
+                    break
+                else:
+                    violation_output = "test "+str(i)+": -> search: '"+value+"' -> Violation Msg: "+message
             violation_list.append(violation_output)
     return violation_list
 
@@ -130,6 +204,9 @@ def main():
     #print(len(data)) #88
     violation_list = (audit(cfg, data))
     print("\n\n",violation_list)
-
+    print("\n\n Test Results")
+    for item in violation_list:
+        print(item)
+    
 if __name__ == '__main__':
     main()
