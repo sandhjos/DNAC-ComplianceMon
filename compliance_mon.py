@@ -30,7 +30,7 @@ import warnings
 import utils
 import dnac_apis
 
-from prime_compliance_dictionary import all_files_into_dict, dictionary_builder, dictionary_list, dictionary, multi_dictionary_builder
+from prime_compliance_dictionary import all_files_into_dict
 
 from requests.auth import HTTPBasicAuth  # for Basic Auth
 from urllib3.exceptions import InsecureRequestWarning  # for insecure https warnings
