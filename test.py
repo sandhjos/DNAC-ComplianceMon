@@ -54,8 +54,71 @@ if my_regex.search(my_string):
 else:
     print(f"The regex {my_regex_str} is not in the string.")
 
+"""next example"""
 import re
 
+# Configuration File to be examined
+cfg = "./DNAC-CompMon-Data/CSW-9300-CORE.base2hq.com_run_config.txt"
+
+# Open the configuration and readlines
+f1 = open(cfg, 'r')
+config_lines = f1.readlines()
+f1.close()
+
+# Variables
+output = []
+suboutput = []
+count = 0
+subcount = 0
+
+"""for line in cfg:
+    if regex.search(line):
+        output.append(line)
+        count = count + 1
+        if
+    else:
+        suboutput.append(line)
+        subcount = subcount + 1
+"""
+# Prompt the user for the interface name
+interface_name = input("Enter the interface name (e.g. GigabitEthernet0/0/1): ")
+
+# Search for the interface section based on a regular expression pattern
+pattern = r"interface {}\n".format(interface_name)
+#pattern = r"^interface (.*)Ethernet(.*)/0/1"
+#regex = re.compile(pattern2)
+
+print(pattern)
+#print(config_lines)
+
+start_index = config_lines.index(pattern)
+end_index = len(config_lines)
+
+print(start_index)
+for i in range(start_index+1, len(config_lines)):
+    if re.match(r"interface \S+", config_lines[i]):
+        end_index = i
+        break
+
+"""pattern = r"interface {}\n".format(interface_name)
+start_index = config_lines.index(pattern)
+end_index = len(config_lines)
+for i in range(start_index+1, len(config_lines)):
+    if re.match(r"interface \S+", config_lines[i]):
+        end_index = i
+        break
+"""
+
+# Display the interface configuration
+print("".join(cfg[start_index:end_index]))
+
+"""print("the number of UTP ports are: ",count,"\n\n")
+for i in range(0,count):
+    print(output[i])
+"""
+
+
+"""
 # Read in the configuration file
 with open("config.txt", "r") as f:
     config_data = f.read()
@@ -97,4 +160,4 @@ for criterion in data:
             print(f"{message}: No matches found.")
         else:
             print(f"{message}: Matches found.")
-
+    """
