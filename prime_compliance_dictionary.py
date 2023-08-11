@@ -121,19 +121,20 @@ def all_files_into_dict(DIRECTORY):
 #     ----------------------------- MAIN -----------------------------
 
 # For testing purposes use the following but comment out and include the same 
+"""
 # calls in the body of the main program
-
-#AUDIT_DATABASE = {}
-#COMPLIANCE_DIRECTORY = "IOSXE"
+AUDIT_DATABASE = {}
+COMPLIANCE_DIRECTORY = "IOSXE"
 #CONFIG_DATA = os.path.join(CONFIG_PATH, CONFIG_STORE)
-#COMP_CHECKS = os.path.join(CONFIG_PATH, COMPLIANCE_STORE, COMPLIANCE_DIRECTORY)
+COMP_CHECKS = os.path.join(CONFIG_PATH, COMPLIANCE_STORE, COMPLIANCE_DIRECTORY)
 
 # Single file test (depricated)
 #xml_file = xml_file_reader(COMP_CHECKS)
 #comp_rule = xmltodict.parse(xml_file)
 #print(f"Read the XML Compliance Rule:\n\n",comp_rule,"\n")
-#AUDIT_DATABASE.update(dictionary_builder(comp_rule,0))
+AUDIT_DATABASE.update(dictionary_builder(comp_rule,0))
 
 # Multi file test
-#AUDIT_DATABASE = all_files_into_dict(COMP_CHECKS)
-#print(f"And now loaded into an object for processing against configs\n\n",AUDIT_DATABASE)
+AUDIT_DATABASE = all_files_into_dict(COMP_CHECKS)
+print(f"And now loaded into an object for processing against configs\n\n",AUDIT_DATABASE)
+"""
