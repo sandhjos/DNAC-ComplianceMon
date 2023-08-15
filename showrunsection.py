@@ -41,11 +41,22 @@ def show_run_section(lines, pattern):
             found_section = False
         else:
             found_section = False
-    return matching_lines
+    return matching_lines    
+
+# This function loads config sections into an array
+def show_run_section_array(section_cfg):
+    section_configs = []
+    sections = ''.join(section_cfg)
+    #print('sections\n\n',sections)
+    # Use regex to split the text into sections for each interface configuration.
+    section_configs = re.split(r'!\n', sections)
+    #print('subsections\n\n',section_configs)
+    return section_configs
 
 #     ----------------------------- MAIN -----------------------------
 # For testing purposes use the following but comment out and include the same 
 # calls in the body of the main program
+
 
 """
 # Open the Cisco configuration file
@@ -58,9 +69,19 @@ with open('./DNAC-CompMon-Data/CSW-9300-CORE.base2hq.com_run_config.txt', 'r') a
     pattern = input('Enter the regular expression pattern to search for: ')
     matching_lines = []
     
-    matching_lines = show_run_section(lines, pattern)
+    #matching_lines = show_run_section(lines, pattern)
 
     # Print out each matching line
-    for line in matching_lines:
+    #for line in matching_lines:
+    #    print(line.strip("\n"))
+    
+    # Print the resulting array
+    config_lines = show_run_section(lines, pattern)
+    for line in config_lines:
         print(line.strip("\n"))
+    
+    sub_sections = show_run_section_array(config_lines)
+
+    # print the first subsection
+    print("\nFirst Subsection\n\n",sub_sections[1])
 """
