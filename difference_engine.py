@@ -191,15 +191,15 @@ def auditv2(cfg, data):
             # for loop for a match in all_config
             for line in cfg:
                 if regex.search(line):
-                    if operator == "MATCHES_EXPRESSION":
+                    if operator == "MATCHES_EXPRESSION" or operator == "CONTAINS":
                         output = True
                         break
-                    elif operator == "DOES_NOT_MATCH":
+                    else:
                         output = False
                 else:
-                    if operator == "MATCHES_EXPRESSION":
+                    if operator == "MATCHES_EXPRESSION" or operator == "CONTAINS":
                         output = False
-                    elif operator == "DOES_NOT_MATCH":
+                    else:
                         output = True
                         break                    
             if output == True:
