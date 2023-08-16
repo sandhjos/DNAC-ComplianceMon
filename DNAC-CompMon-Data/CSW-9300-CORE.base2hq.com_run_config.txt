@@ -1799,6 +1799,7 @@ cts role-based sgt-map 10.10.0.252 sgt 14
 cts role-based enforcement
 cts role-based enforcement vlan-list 1-4094
 cts role-based sgt-caching
+banner exec ^C
 banner login ^C
   Session On $(hostname) Is Monitored!!!
   *****************************LEGAL WARNING************************************
