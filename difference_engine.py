@@ -147,6 +147,7 @@ def auditv2(cfg, data):
                     value = "^." + value[2:]
                 message = (sub_dict['Message'])
                 regex = re.compile(value)
+                print("TEST: ",i," REGEX Expression: ",regex," STRING: ",value)
                 if scope == "SUBMODE_CONFIG":
                     config_section = show_run_section(cfg, regex)
                     config_subsections = show_run_section_array(config_section)
@@ -159,14 +160,22 @@ def auditv2(cfg, data):
                 elif scope == "PREVIOUS_SUBMODE_CONFIG" and carryonflag == True:
                     for subsection in config_subsections:
                         if regex.search(subsection):
-                            if operator == "MATCHES_EXPRESSION":
+                            if operator == "MATCHES_EXPRESSION" or operator == "CONTAINS":
                                 output = True
                                 carryonflag == True
                             elif operator == "DOES_NOT_MATCH":
                                 output = False
                                 carryonflag = False
+                        elif value in line:
+                            if operator == "MATCHES_EXPRESSION" or operator == "CONTAINS":
+                                output = True
+                                carryonflag == True
+                                break
+                            else:
+                                output = False
+                                carryonflag == False
                         else:
-                            if operator == "MATCHES_EXPRESSION":
+                            if operator == "MATCHES_EXPRESSION" or operator == "CONTAINS":
                                 output = False
                                 carryonflag = False
                             elif operator == "DOES_NOT_MATCH":
@@ -187,10 +196,17 @@ def auditv2(cfg, data):
             elif value.startswith("^*"):
                 value = "^." + value[2:]
             regex = re.compile(value)
+            print("TEST: ",i," REGEX Expression: ",regex," STRING: ",value)
             message = data[i]['Message']
             # for loop for a match in all_config
             for line in cfg:
                 if regex.search(line):
+                    if operator == "MATCHES_EXPRESSION" or operator == "CONTAINS":
+                        output = True
+                        break
+                    else:
+                        output = False
+                elif value in line:
                     if operator == "MATCHES_EXPRESSION" or operator == "CONTAINS":
                         output = True
                         break
