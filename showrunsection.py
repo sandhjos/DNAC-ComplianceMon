@@ -77,11 +77,13 @@ with open('./DNAC-CompMon-Data/CSW-9300-CORE.base2hq.com_run_config.txt', 'r') a
     
     # Print the resulting array
     config_lines = show_run_section(lines, pattern)
+    
     for line in config_lines:
         print(line.strip("\n"))
     
     sub_sections = show_run_section_array(config_lines)
 
     # print the first subsection
-    print("\nFirst Subsection\n\n",sub_sections[1])
+    test = input('Enter a number for the subsection to be displayed? ')
+    print("\nSubsection: "+test+"\n\n",sub_sections[(int(test) - 1)])
 """
