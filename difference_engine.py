@@ -135,7 +135,8 @@ def auditv2(cfg, data):
     violation_output = ''
     for i in range(0, (len(data)-1)):
         if isinstance(data[i], list):
-            config_sections = []
+            config_section = []
+            output = False
             for sub_dict in data[i]:
                 scope = (sub_dict['Scope'])
                 operator = (sub_dict['Operator'])
@@ -145,27 +146,39 @@ def auditv2(cfg, data):
                 elif value.startswith("^*"):
                     value = "^." + value[2:]
                 message = (sub_dict['Message'])
-                """if scope == "ALL_CONFIG":
-                    regex = re.compile(value)
-                if scope == "SUBMODE_CONFIG":
-                    regex = re.compile(value)
-                elif scope == "PREVIOUS_SUBMODE_CONFIG":
-                    pattern = "(?s)(?<=^interface.*\n)(" + value + ")"
-                else:
-                    continue
-                """
                 regex = re.compile(value)
-                config_section = show_run_section(cfg, regex)
-                config_sections = show_run_section_array(config_section)
-                # for loop for a match in all_config
-                output = []
-                for sub_section_line in config_sections:
-                    if regex.search(sub_section_line):
-                        output.append("test "+str(i)+": -> Passed")
+                if scope == "SUBMODE_CONFIG":
+                    config_section = show_run_section(cfg, regex)
+                    config_subsections = show_run_section_array(config_section)
+                    if config_subsections != "":
+                        output = True
+                        carryonflag = True
                     else:
-                        output.append("test "+str(i)+": -> search: '"+value+"' -> Violation Msg: "+message)
-                violation_list.append(output)                    
+                        output = True
+                        carryonflag = False
+                elif scope == "PREVIOUS_SUBMODE_CONFIG" and carryonflag == True:
+                    for subsection in config_subsections:
+                        if regex.search(subsection):
+                            if operator == "MATCHES_EXPRESSION":
+                                output = True
+                                carryonflag == True
+                            elif operator == "DOES_NOT_MATCH":
+                                output = False
+                                carryonflag = False
+                        else:
+                            if operator == "MATCHES_EXPRESSION":
+                                output = False
+                                carryonflag = False
+                            elif operator == "DOES_NOT_MATCH":
+                                output = True
+                                carryonflag == True
+            if output == True:
+                violation_output = "test "+str(i)+": -> Passed"
+            elif output == False:
+                violation_output = "test "+str(i)+": -> search: '"+value+"' -> Violation Msg: "+message
+            violation_list.append(violation_output)                    
         if isinstance(data[i], dict):
+            output = True
             scope = data[i]['Scope']
             operator = data[i]['Operator']
             value = data[i]['Value']
@@ -178,11 +191,21 @@ def auditv2(cfg, data):
             # for loop for a match in all_config
             for line in cfg:
                 if regex.search(line):
-                    #if value in line:
-                    violation_output = "test "+str(i)+": -> Passed"
-                    break
+                    if operator == "MATCHES_EXPRESSION":
+                        output = True
+                        break
+                    elif operator == "DOES_NOT_MATCH":
+                        output = False
                 else:
-                    violation_output = "test "+str(i)+": -> search: '"+value+"' -> Violation Msg: "+message
+                    if operator == "MATCHES_EXPRESSION":
+                        output = False
+                    elif operator == "DOES_NOT_MATCH":
+                        output = True
+                        break                    
+            if output == True:
+                violation_output = "test "+str(i)+": -> Passed"
+            elif output == False:
+                violation_output = "test "+str(i)+": -> search: '"+value+"' -> Violation Msg: "+message
             violation_list.append(violation_output)
     return violation_list
 
@@ -199,7 +222,7 @@ def main():
     violation_list = []
 
     # Single test
-    # #number = 10
+    # number = 10
     #items = get_data_by_number(data, number)
     
     #for item in items:
@@ -214,8 +237,8 @@ def main():
 
     # Multiple Test
     violation_list = (auditv2(cfg, data))
-    print("\n\n",violation_list)
-    print("\n\n Test Results")
+    #print("\n\n",violation_list)
+    print("\n\n Test Results: \n")
     for item in violation_list:
         print(item)
     

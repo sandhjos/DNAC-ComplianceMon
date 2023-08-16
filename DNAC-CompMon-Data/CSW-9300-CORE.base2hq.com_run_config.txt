@@ -1655,7 +1655,7 @@ snmp-server group V3GROUP v3 auth read V3READ write V3WRITE access DEVICE-MGMT-O
 snmp-server group AdminV3SNMP v3 auth 
 snmp-server view xxxxxxxx
 snmp-server view xxxxxxxx
-snmp-server community xxxxxxxx RW
+snmp-server community private RW
 snmp-server community xxxxxxxx RO
 snmp-server trap-source Loopback0
 snmp-server location BASE2HQ
