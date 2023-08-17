@@ -2012,6 +2012,7 @@ line vty 5 15
 line vty 16 31
  transport input ssh
  session-timeout 10
+ access-class SSH_ACCESS in
 !
 call-home
  ! If contact email address in call-home is configured as sch-smart-licensing@cisco.com

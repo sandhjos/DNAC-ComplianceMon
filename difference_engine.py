@@ -132,6 +132,7 @@ def auditv2(cfg, data):
     f1.close()
     # create a diff_list that will include all the lines that are non compliant
     violation_list = []
+    instance = []
     violation_output = ''
     for i in range(0, (len(data)-1)):
         if isinstance(data[i], list):
@@ -152,40 +153,43 @@ def auditv2(cfg, data):
                 if scope == "SUBMODE_CONFIG":
                     config_section = show_run_section(cfg, regex)
                     config_subsections = show_run_section_array(config_section)
-                    if config_subsections != "":
+                    #print("\nTest: "+str(i)+"\nsection: ",config_section,"\nsubsection: ",config_subsections)
+                    #print("\n\nsearch: ",regex)
+                    if config_section != "":
                         output = True
                         carryonflag = True
                     else:
                         output = True
                         carryonflag = False
-                elif scope == "PREVIOUS_SUBMODE_CONFIG" and carryonflag == True:
+                    #print("\n\n",output,carryonflag)
+                elif ((scope == "PREVIOUS_SUBMODE_CONFIG") and (len(config_section)!=0)):
                     for subsection in config_subsections:
+                        #print(subsection)
                         if regex.search(subsection):
                             if operator == "MATCHES_EXPRESSION" or operator == "CONTAINS":
                                 output = True
                                 carryonflag == True
+                                #print("1")
+                                instance.append(subsection.strip('\n'))
                             elif operator == "DOES_NOT_MATCH":
                                 output = False
                                 carryonflag = False
-                        elif value in line:
-                            if operator == "MATCHES_EXPRESSION" or operator == "CONTAINS":
-                                output = True
-                                carryonflag == True
-                                break
-                            else:
-                                output = False
-                                carryonflag == False
+                                #print("2")
                         else:
                             if operator == "MATCHES_EXPRESSION" or operator == "CONTAINS":
                                 output = False
                                 carryonflag = False
+                                #print("3")
+                                instance.append(subsection.strip('\n'))
                             elif operator == "DOES_NOT_MATCH":
                                 output = True
                                 carryonflag == True
+                                #print("4")
+                    #print(output,carryonflag)
             if output == True:
                 violation_output = "test "+str(i)+": -> Passed"
             elif output == False:
-                violation_output = "test "+str(i)+": -> search: '"+value+"' -> Violation Msg: "+message
+                violation_output = "test "+str(i)+": -> search: '"+value+"' -> Violation Msg: "+message+"\n\n      Instances: \n"+'\n'.join([instance[i] for i in range(len(instance)-1)])
             violation_list.append(violation_output)                    
         if isinstance(data[i], dict):
             output = True
