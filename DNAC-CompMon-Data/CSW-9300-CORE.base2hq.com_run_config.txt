@@ -1799,7 +1799,6 @@ cts role-based sgt-map 10.10.0.252 sgt 14
 cts role-based enforcement
 cts role-based enforcement vlan-list 1-4094
 cts role-based sgt-caching
-banner exec ^C
 banner login ^C
   Session On $(hostname) Is Monitored!!!
   *****************************LEGAL WARNING************************************
@@ -2000,6 +1999,7 @@ line vty 0 4
  terminal-type mon
  length 0
  transport input ssh
+ session-timeout 10
 line vty 5 15
  exec-timeout 0 0
  authorization exec CON-VTY
@@ -2008,8 +2008,10 @@ line vty 5 15
  terminal-type mon
  length 0
  transport input ssh
+ session-timeout 10
 line vty 16 31
  transport input ssh
+ session-timeout 10
 !
 call-home
  ! If contact email address in call-home is configured as sch-smart-licensing@cisco.com
