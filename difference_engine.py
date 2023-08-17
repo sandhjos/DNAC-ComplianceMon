@@ -145,9 +145,10 @@ def auditv2(cfg, data):
                     value = "." + value[1:]
                 elif value.startswith("^*"):
                     value = "^." + value[2:]
+                if "(.*)" in value:
+                    value = value.replace('(.*)', '.*')
                 message = (sub_dict['Message'])
                 regex = re.compile(value)
-                print("TEST: ",i," REGEX Expression: ",regex," STRING: ",value)
                 if scope == "SUBMODE_CONFIG":
                     config_section = show_run_section(cfg, regex)
                     config_subsections = show_run_section_array(config_section)
@@ -195,8 +196,9 @@ def auditv2(cfg, data):
                 value = "." + value[1:]
             elif value.startswith("^*"):
                 value = "^." + value[2:]
+            if "(.*)" in value:
+                value = value.replace('(.*)', '.*')
             regex = re.compile(value)
-            print("TEST: ",i," REGEX Expression: ",regex," STRING: ",value)
             message = data[i]['Message']
             # for loop for a match in all_config
             for line in cfg:
