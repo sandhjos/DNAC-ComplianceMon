@@ -49,14 +49,32 @@ def show_run_section_array(section_cfg):
     sections = ''.join(section_cfg)
     #print('sections\n\n',sections)
     # Use regex to split the text into sections for each interface configuration.
-    section_configs = re.split(r'!\n', sections)
+    keywords  = ["line vty","class","event"]
+    key = ""
+    for keyword in keywords:
+        if re.search(keyword, sections):
+            key = keyword
+            break
+        else:
+            key = "escape_flag"
+            break
+    if key in sections:
+        section_configs = re.split(f'({key})', sections)
+        #print(section_configs)
+        output_sections = []
+        for i in range(0,(len(section_configs)-1)):
+            if section_configs[i] == key:
+                output_sections.append(section_configs[i] + section_configs[i+1])
+        #print(output_sections)
+        section_configs = output_sections
+    else:
+        section_configs = re.split(r'!\n', sections)
     #print('subsections\n\n',section_configs)
     return section_configs
 
 #     ----------------------------- MAIN -----------------------------
 # For testing purposes use the following but comment out and include the same 
 # calls in the body of the main program
-
 
 """
 # Open the Cisco configuration file
