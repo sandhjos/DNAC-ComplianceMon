@@ -2011,7 +2011,6 @@ line vty 5 15
  session-timeout 10
 line vty 16 31
  transport input ssh
- session-timeout 10
  access-class SSH_ACCESS in
 !
 call-home
