@@ -72,6 +72,22 @@ def show_run_section_array(section_cfg):
     #print('subsections\n\n',section_configs)
     return section_configs
 
+# This function pulls relevant configuration sections
+def show_run_headers(lines, pattern):
+    try:
+        pattern = re.compile(pattern)
+    except ValueError:
+        print("Error: Search Parameter {} not found in configuration file".format(pattern))
+        exit(1)
+    # Find all the lines that match the pattern
+    matching_lines = []
+    found_section = False
+    for line in lines:
+        if re.search(pattern, line):
+            found_section = True
+            matching_lines.append(line)
+    return matching_lines    
+
 #     ----------------------------- MAIN -----------------------------
 # For testing purposes use the following but comment out and include the same 
 # calls in the body of the main program
@@ -79,7 +95,6 @@ def show_run_section_array(section_cfg):
 """
 # Open the Cisco configuration file
 with open('./DNAC-CompMon-Data/CSW-9300-CORE.base2hq.com_run_config.txt', 'r') as config_file:
-
     # Read all the lines in the file
     lines = config_file.readlines()
 
@@ -104,4 +119,10 @@ with open('./DNAC-CompMon-Data/CSW-9300-CORE.base2hq.com_run_config.txt', 'r') a
     # print the first subsection
     test = input('Enter a number for the subsection to be displayed? ')
     print("\nSubsection: "+test+"\n\n",sub_sections[(int(test) - 1)])
+
+    sub_sections_headers = show_run_headers(config_lines, pattern)
+
+    #test = input('Enter a number for the subsection to be displayed? ')
+    #print("\nSubsection: "+test+"\n\n",sub_sections_headers[(int(test) - 1)])
+    print("\nSubsection: \n\n",sub_sections_headers)
 """
