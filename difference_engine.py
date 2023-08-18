@@ -234,13 +234,14 @@ def main():
     # Multiple Test
     violation_list = (audit(cfg, data))
     #print("\n\n",violation_list)
-    print("\n\n ##################################################################################################")
-    print("         COMPLIANCE REPORT FROM FRIDAY AUG 18 2023 EST 15:00:00 ")
-    print("         DNA CENTER INTEROGATED: DNAC.base2hq.com @ 10.10.0.20  ")
-    print(" ##################################################################################################\n")
-    print("\n\n Test Results: \n")
-    for item in violation_list:
-        print(item)
-    
+    #print("\n\n ##################################################################################################")
+    #print("         COMPLIANCE REPORT FROM FRIDAY AUG 18 2023 EST 15:00:00 ")
+    #print("         DNA CENTER INTEROGATED: DNAC.base2hq.com @ 10.10.0.20  ")
+    #print(" ##################################################################################################\n")
+    #print("\n\n Test Results: \n")
+    #for item in violation_list:
+    #    print(item)
+    compliance_report(violation_list)
+
 if __name__ == '__main__':
     main()
