@@ -31,11 +31,12 @@ import utils
 import dnac_apis
 
 from prime_compliance_dictionary import all_files_into_dict
+from difference_engine import compliance_run
 
 from requests.auth import HTTPBasicAuth  # for Basic Auth
 from urllib3.exceptions import InsecureRequestWarning  # for insecure https warnings
 
-from config import DNAC_URL, DNAC_PASS, DNAC_USER, CONFIG_PATH, CONFIG_STORE, COMPLIANCE_STORE
+from config import DNAC_URL, DNAC_PASS, DNAC_USER, CONFIG_PATH, CONFIG_STORE, COMPLIANCE_STORE, DNAC_IP, DNAC_FQDN
 
 urllib3.disable_warnings(InsecureRequestWarning)  # disable insecure https warnings
 
@@ -132,7 +133,8 @@ def main():
     COMP_CHECKS = os.path.join(CONFIG_PATH, COMPLIANCE_STORE, COMPLIANCE_DIRECTORY)
     
     AUDIT_DATABASE = all_files_into_dict(COMP_CHECKS)
-    print(f"Audit Rules from Prime loaded for processing against configs\n\n",AUDIT_DATABASE)
+    print(f"First the Audit Rules from Prime loaded for processing against configs\n\n",AUDIT_DATABASE)
+    pause()   
 
     config_library(CONFIG_PATH,CONFIG_STORE)
 
@@ -146,7 +148,8 @@ def main():
         datefmt='%Y-%m-%d %H:%M:%S')
 
     print("DNA Center Compliance Monitor:\n")
-    print("We are going to collect all configurations for routers and switches your DNA Center\n")
+    print("We are going to collect all configurations for routers and switches your DNA Center")
+    print("\n\nDNA CENTER INTEROGATED: " + DNAC_FQDN + " @ IP ADDRESS: " + DNAC_IP)
     print("\n\nThis is the Token we will use for Authentication:")
     dnac_token = dnac_apis.get_dnac_jwt_token(DNAC_AUTH)
     print('\nDNA Center AUTH Token: \n', dnac_token, '\n')
@@ -232,8 +235,10 @@ def main():
             # retrieve the device management IP address
             device_mngmnt_ip_address = dnac_apis.get_device_management_ip(device, dnac_token)
 
-            print('Device: ' + device + ' - New device discovered')
-
+            print('Device: ' + device + ' - New device discovered\n\n\n')
+    
+    pause()
+    compliance_run("./", AUDIT_DATABASE)
     #print('Wait for 10 seconds and start again')
     #time.sleep(10)
 
