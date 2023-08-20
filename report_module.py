@@ -19,13 +19,13 @@
 import os
 import sys
 import os.path
-import difflib
-import json
-import re
 import datetime
 import time
 import pytz
-from config import DNAC_IP, DNAC_FQDN
-from showrunsection import show_run_section, show_run_section_array, show_run_headers
+from fpdf import FPDF
 
 #     ----------------------------- DEFINITIONS -----------------------------
+
+# Convert a text string to a pdf report and return the pdf
+def pdf_converter():
+    return

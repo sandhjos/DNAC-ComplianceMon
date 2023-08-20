@@ -76,11 +76,23 @@ def date_time(TIME_ZONE):
         time_zone = 'US/Eastern'
     else:
         time_zone = TIME_ZONE
-    est_tz = pytz.timezone(time_zone)
-    now_est = now_utc.astimezone(est_tz)
+    tz = pytz.timezone(time_zone)
+    
+    # Check if the timezone is currently observing daylight savings time
+    is_dst = bool(tz.localize(datetime.datetime.now()).dst())
+    
+    # Convert to the specified timezone while accounting for daylight savings time
+    if is_dst:
+        now_tz = datetime.datetime.now(tz)
+    else:
+        now_tz = tz.normalize(now_utc.astimezone(tz))
+    
     # Format the date and time string
-    date_str = now_est.strftime('%m/%d/%Y')
-    time_str = now_est.strftime('%H:%M:%S')
+    date_str = now_tz.strftime('%m/%d/%Y')
+    time_str = now_tz.strftime('%H:%M:%S')
+    print(time_str)
+    if is_dst:
+        time_str += ' (DST)'
     return date_str, time_str
 
 #     ----------------------------- MAIN -----------------------------

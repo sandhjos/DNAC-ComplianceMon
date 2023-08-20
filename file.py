@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 ####################################################################################
 # project: DNAC-ComplianceMon
 # module: config.py
@@ -11,12 +9,8 @@
 #            Bryn Pounds, PSA, WW Architectures, Cisco Systems
 ####################################################################################
 
-# This section sets up the various connection settings
-
-#     ------------------------------- IMPORTS -------------------------------
 import socket
 
-#     -------------------------------- VALUES -------------------------------
 # This file contains the:
 # DNAC username and password, server info and file locations
 
@@ -35,6 +29,9 @@ SMTP_EMAIL = "sender@gmail.com"
 SMTP_PASS = "16-digit-app-password"
 # Enter receiver address
 NOTIFICATION_EMAIL = "receiver@gmail.com"
+
+# Update this section for the Time Zone
+TIME_ZONE = 'US/Eastern'
 
 # File location to be used for configurations
 CONFIG_PATH = f"."

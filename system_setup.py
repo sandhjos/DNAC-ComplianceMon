@@ -27,6 +27,8 @@ import dnac_apis
 import smtplib
 import ssl
 import getpass
+import pytz
+from config import TIME_ZONE
 
 #     ----------------------------- DEFINITIONS -----------------------------
 
@@ -165,9 +167,76 @@ def SMTP_setup(file_path):
                 new_lines.append(line)
         with open(file_path, "w") as f:
             f.writelines(new_lines)
+
         # Print a success message and exit the loop
-        print("Server information updated successfully.")
+        print("SMTP Server information updated successfully.")
         break
+    return
+
+# This function sets the DNA Center connection details
+def TZONE_setup(file_path):
+    # Define the path to the Python file to update
+    #test_file_path = "./file.py"
+
+    # Loop until valid input is given or cancel is entered
+    while True:
+        print("\n\nThe Time Zone is currently set for " + TIME_ZONE + ".\n\n")
+        dnac_ip = input("To set the time zone to another value enter [yes|y] (or 'cancel' to exit): ")
+        if dnac_ip.lower() == "cancel":
+            break
+
+        # Display a list of available countries
+        print("Available countries:")
+        country_codes = list(pytz.country_names.keys())
+        max_len = max([len(pytz.country_names[cc]) for cc in country_codes])
+        num_cols = 3
+        rows = [country_codes[i:i+num_cols] for i in range(0, len(country_codes), num_cols)]
+        for row in rows:
+            cols = [f"{cc.ljust(2)} {pytz.country_names[cc].ljust(max_len)}" for cc in row]
+            print("  ".join(cols))
+        
+        # Prompt the user to select a country
+        country_code = input("\nEnter the 2-letter country code for your location: ")
+        
+        # Validate the country code entered by the user
+        if country_code not in pytz.country_names:
+            print("Invalid country code. Please try again.")
+        else:
+            # Display a list of available timezones for the selected country
+            print(f"\nAvailable timezones for {pytz.country_names[country_code]}:")
+            timezones = pytz.country_timezones.get(country_code)
+            max_len = max([len(tz) for tz in timezones])
+            num_cols = 3
+            rows = [timezones[i:i+num_cols] for i in range(0, len(timezones), num_cols)]
+            for i, row in enumerate(rows):
+                cols = [f"{i*num_cols+j+1}. {tz.ljust(max_len)}" for j, tz in enumerate(row)]
+                print("  ".join(cols))
+            
+            # Prompt the user to select a timezone by number
+            timezone_num = input("\nEnter the number of your timezone: ")
+            try:
+                timezone_idx = int(timezone_num) - 1
+                selected_timezone = timezones[timezone_idx]
+                print("\nSelected timezone:", selected_timezone)
+            except (ValueError, IndexError):
+                print("Invalid timezone number. Please try again.")
+            
+            # If all tests pass, replace lines in the Python file
+            with open(file_path, "r") as f:
+                lines = f.readlines()
+            new_lines = []
+            for line in lines:
+                if "TIME_ZONE =" in line:
+                    new_lines.append(f"TIME_ZONE = '{selected_timezone}'\n")
+                else:
+                    new_lines.append(line)
+            with open(file_path, "w") as f:
+                f.writelines(new_lines)
+
+            # Print a success message and exit the loop
+            print("Time Zone information updated successfully.")
+            break
+
     return
 
 def system_settings():
@@ -180,7 +249,8 @@ def system_settings():
         print("\n\nDNA Center Compliance Monitor Setup\n")
         print("1. DNA Center Connection Settings")
         print("2. SMTP Connection Settings")
-        print("3. Schedule Settings")
+        print("3. Time Zone Settings")
+        print("4. Schedule Settings")
         menu_input = input("\n\nEnter a number from above for setup (or 'cancel' to exit): ")
 
         if menu_input.lower() == "cancel":
@@ -188,12 +258,14 @@ def system_settings():
 
         # Test the connection to the SMTP server
         try:
-            if int(menu_input) <= 2 and int(menu_input) >= 1:
+            if int(menu_input) <= 3 and int(menu_input) >= 1:
                 # If all the tests pass
                 if int(menu_input) == 1:
                     DNAC_setup(file_path)
                 elif int(menu_input) == 2:
                     SMTP_setup(file_path)
+                elif int(menu_input) == 3:
+                    TZONE_setup(file_path)
         except:
             print("\nValid selections only are 1 to 2. Please try again.")
             continue
@@ -202,7 +274,6 @@ def system_settings():
 #     ----------------------------- MAIN -----------------------------
 
 # code below for development purposes and testing only
-"""
+
 if __name__ == '__main__':
     system_settings()
-"""
