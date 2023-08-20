@@ -30,6 +30,9 @@ SMTP_PASS = "16-digit-app-password"
 # Enter receiver address
 NOTIFICATION_EMAIL = "receiver@gmail.com"
 
+# Update this section for the Time Zone
+TIME_ZONE = 'US/Eastern'
+
 # File location to be used for configurations
 CONFIG_PATH = f"."
 CONFIG_STORE = f"DNAC-CompMon-Data"
