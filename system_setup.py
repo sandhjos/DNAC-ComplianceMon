@@ -30,9 +30,10 @@ import getpass
 #     ----------------------------- DEFINITIONS -----------------------------
 
 # This function sets the DNA Center connection details
-def DNAC_setup():
+def DNAC_setup(file_path):
     # Define the path to the Python file to update
-    file_path = "./file.py"
+    #test_file_path = "./file.py"
+
     # Loop until valid input is given or cancel is entered
     while True:
         dnac_ip = input("Enter the IP address of the DNA Center you wish to connect (or 'cancel' to exit): ")
@@ -40,18 +41,21 @@ def DNAC_setup():
             break
         dnac_usr = input("Enter the username for DNA Center: ")
         dnac_pwd = input("Enter the password for DNA Center: ")
+
         # Test for a valid IP address
         try:
             socket.inet_aton(dnac_ip)
         except socket.error:
             print("Invalid IP address. Please try again.")
             continue
+
         # Test the connection to the server with a ping
         ping_cmd = ["ping", "-c", "1", "-W", "1", dnac_ip]
         ping_result = subprocess.run(ping_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if ping_result.returncode != 0:
             print("Server is not reachable. Please try again.")
             continue
+
         # Do a DNS lookup for the FQDN of the server
         try:
             dnac_fqdn = socket.getfqdn(dnac_ip)
@@ -62,6 +66,7 @@ def DNAC_setup():
         except socket.error:
             print("DNS lookup failed. Please try again.")
             continue
+
         #Try connecting to DNA Center
         try:
             DNAC_AUTH = HTTPBasicAuth(dnac_usr, dnac_pwd)
@@ -70,6 +75,7 @@ def DNAC_setup():
         except:
             print("Credentials failed. Please try again.")
             continue
+
         # If all tests pass, replace lines in the Python file
         with open(file_path, "r") as f:
             lines = f.readlines()
@@ -85,17 +91,20 @@ def DNAC_setup():
                 new_lines.append(line)
         with open(file_path, "w") as f:
             f.writelines(new_lines)
+
         # Print a success message and exit the loop
         print("Server information updated successfully.")
         break
     return
 
-def SMTP_setup():
+def SMTP_setup(file_path):
     # Define the typical gmail server settings
     smtp_server = "smtp.gmail.com"
     smtp_port = 587
+
     # Define the path to the Python file to update
-    file_path = "./file.py"
+    #test_file_path = "./file.py"
+
     # Loop until valid input is given or cancel is entered
     while True:
         # Ask for user input
@@ -160,5 +169,39 @@ def SMTP_setup():
         break
     return
 
-#DNAC_setup()
-SMTP_setup()
+def system_settings():
+    # Define the path to the Python file to update
+    file_path = "./config.py"
+
+    # Loop until valid input is given or cancel is entered
+    while True:
+        # Ask for user input
+        print("\n\nDNA Center Compliance Monitor Setup\n")
+        print("1. DNA Center Connection Settings")
+        print("2. SMTP Connection Settings")
+        print("3. Schedule Settings")
+        menu_input = input("\n\nEnter a number from above for setup (or 'cancel' to exit): ")
+
+        if menu_input.lower() == "cancel":
+            break
+
+        # Test the connection to the SMTP server
+        try:
+            if int(menu_input) <= 2 and int(menu_input) >= 1:
+                # If all the tests pass
+                if int(menu_input) == 1:
+                    DNAC_setup(file_path)
+                elif int(menu_input) == 2:
+                    SMTP_setup(file_path)
+        except:
+            print("\nValid selections only are 1 to 2. Please try again.")
+            continue
+    return
+
+#     ----------------------------- MAIN -----------------------------
+
+# code below for development purposes and testing only
+"""
+if __name__ == '__main__':
+    system_settings()
+"""

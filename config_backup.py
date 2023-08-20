@@ -14,23 +14,20 @@ import socket
 # DNAC username and password, server info and file locations
 
 # Update this section with the DNA Center server info and user information
-DNAC_IP = '10.10.0.20'
+DNAC_IP = '10.0.0.1'
 DNAC_USER = 'demouser'
 DNAC_PASS = 'C1sco12345'
 DNAC_URL = 'https://' + DNAC_IP
 DNAC_FQDN = socket.getfqdn(DNAC_IP)
 
 # Update this section for Email Notification 
-SMTP_SERVER = 'smtp.gmail.com'
-SMTP_PORT = '587'
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
 # Enter your address
-SMTP_EMAIL = 'base2hq@gmail.com'
-SMTP_PASS = 'fanktmbbmabnnqza'
+SMTP_EMAIL = "sender@gmail.com"
+SMTP_PASS = "16-digit-app-password"
 # Enter receiver address
-NOTIFICATION_EMAIL = 'kebaldwi@cisco.com'
-
-# Update this section for the Time Zone
-TIME_ZONE = 'US/Eastern'
+NOTIFICATION_EMAIL = "receiver@gmail.com"
 
 # File location to be used for configurations
 CONFIG_PATH = f"."
