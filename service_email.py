@@ -2,7 +2,7 @@
 
 ####################################################################################
 # project: DNAC-ComplianceMon
-# module: email_service.py
+# module: service_email.py
 # author: kebaldwi@cisco.com
 # use case: Simple Check of XML audit files against configuration
 # developers:
