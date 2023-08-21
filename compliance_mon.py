@@ -186,7 +186,7 @@ def main():
     # get the config files, compare with existing (if one existing). Save new config if file not existing.
     for device in all_devices_hostnames:
         device_run_config = dnac_apis.get_device_config(device, dnac_token)
-        filename = str(device) + '_' + date_str + '_' + time_str + '_run_config.txt'
+        filename = str(device) + '_' + date_str + '_run_config.txt'
         
         # save the running config to a temp file
         f_temp = open(temp_run_config, 'w')
