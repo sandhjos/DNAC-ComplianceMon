@@ -77,7 +77,7 @@ def pdf_converter(DATA, DIRECTORY):
     date_str = now_tz.strftime('%m/%d/%Y').replace('/', '_')
     time_str = now_tz.strftime('%H:%M:%S').replace(':', '_')
     # Define the filename for the PDF file
-    FILENAME = "DNAC-COMPLIANCE-REPORT-"+date_str+"-"+time_str+".pdf"
+    FILENAME = "DNAC-COMPLIANCE-REPORT-" + date_str + ".pdf"
     report = DIRECTORY + FILENAME
     # Save the PDF file
     pdf.output(DIRECTORY + FILENAME)
@@ -134,7 +134,7 @@ def json_export(ARRAY, DIRECTORY):
     date_str = now_tz.strftime('%m/%d/%Y').replace('/', '_')
     time_str = now_tz.strftime('%H:%M:%S').replace(':', '_')
     # Define the filename for the PDF file
-    FILENAME = DIRECTORY + "DCR-" + file_name + "-" + date_str + "-" + time_str + ".json"
+    FILENAME = DIRECTORY + "DCR-" + file_name + "-" + date_str + ".json"
     # Save the JSON file
     with open(FILENAME, "w") as outfile:
         # Write the JSON object to the file
