@@ -1,9 +1,9 @@
 
 Building configuration...
 
-Current configuration : 51554 bytes
+Current configuration : 82630 bytes
 !
-! Last configuration change at 10:32:28 UTC Thu Aug 3 2023
+! Last configuration change at 14:28:11 EDT Wed Aug 16 2023 by admin
 !
 version 17.6
 service tcp-keepalives-in
@@ -13,10 +13,9 @@ service timestamps log datetime msec show-timezone year
 service password-encryption
 service sequence-numbers
 service call-home
-service unsupported-transceiver
-platform punt-keepalive disable-kernel-core
+no platform punt-keepalive disable-kernel-core
 !
-hostname DSW-C9300-TRANSIT
+hostname CSW-9300-CORE
 !
 !
 vrf definition Mgmt-vrf
@@ -27,24 +26,37 @@ vrf definition Mgmt-vrf
  address-family ipv6
  exit-address-family
 !
+logging buffered 16384 informational
+no logging console
 enable secret 9 xxxxxxxx
 !
 aaa new-model
 !
 !
+aaa group server radius CON-VTY
+ server-private 10.10.0.250 key 7 094F471A1A0A464058
+ ip radius source-interface Loopback0
+ deadtime 6
+!
 aaa group server radius dnac-client-radius-group
  server name dnac-radius_10.10.0.200
- ip vrf forwarding WAN-Emulation
- ip radius source-interface Vlan2
+ ip radius source-interface Loopback0
 !
 aaa authentication login default local
+aaa authentication login CON-VTY group CON-VTY local-case
+aaa authentication login CON-LAB local-case
 aaa authentication login dnac-cts-list group dnac-client-radius-group local
 aaa authentication dot1x default group dnac-client-radius-group
+aaa authorization console
 aaa authorization exec default local 
+aaa authorization exec CON-VTY group CON-VTY local 
+aaa authorization exec CON-LAB local 
 aaa authorization network default group dnac-client-radius-group 
 aaa authorization network dnac-cts-list group dnac-client-radius-group 
 aaa accounting update newinfo periodic 2880
 aaa accounting identity default start-stop group dnac-client-radius-group
+aaa accounting exec CON-VTY start-stop group CON-VTY
+aaa accounting network default start-stop group radius
 !
 !
 !
@@ -55,40 +67,55 @@ aaa server radius dynamic-author
 !
 aaa session-id common
 boot system switch all flash:cat9k_iosxe.17.06.05.SPA.bin
-switch 1 provision c9300-24s
+clock timezone EST -5 0
+clock summer-time EDT recurring
+switch 1 provision c9300-48u
 !
 !
 !
 !
 ip routing
 !
-ip vrf WAN-Emulation
- description WAN-Emulation
- rd 127:255
+ip vrf firewalldmz
+ description VLAN firewalldmz
+ rd 100:666
+!
+ip vrf guest
+ description VLAN guest
+ rd 100:90
 !
 !
 ip nbar http-services
 !
-ip nbar custom socio http url "app.socio.events" id 6676 
 ip nbar custom VUDU http url "https://www.vudu.com" id 55850 
+ip nbar custom socio http url "app.socio.events" id 6676 
 !
-ip nbar attribute-map BR0
- attribute business-relevance business-relevant
 ip nbar attribute-map TC3_BR0
  attribute traffic-class multimedia-streaming
  attribute business-relevance business-relevant
+ip nbar attribute-map BR0
+ attribute business-relevance business-relevant
 !
 !
-ip nbar attribute-set socio TC3_BR0
 ip nbar attribute-set VUDU TC3_BR0
+ip nbar attribute-set socio TC3_BR0
 !
+ip multicast-routing 
 ip name-server 10.10.0.250
-ip domain lookup source-interface Vlan2
-ip domain name sda.base2hq.com
+ip domain lookup source-interface Loopback0
+ip domain name base2hq.com
 !
 !
 !
  login xxxxxx
+ login xxxxxx
+!
+location civic-location identifier 1
+ country US
+ postal-code 46037
+ state Indiana
+ street-group "Whitney Way"
+ number 10054
 !
 !
 !
@@ -96,21 +123,30 @@ ip domain name sda.base2hq.com
 !
 !
 !
-vtp domain sda.base2hq.com
+vtp domain base2hq.com
 vtp mode transparent
+udld enable
+
 avc sd-service
  segment AppRecognition
  controller
   address 10.10.0.20 
   destination-ports sensor-exporter 21730
   dscp 16
-  source-interface Vlan2
+  source-interface Loopback0
   transport application-updates https url-prefix sdavc
  !
 !
 !
-access-session mac-move deny
+parameter-map type webauth global
+ watch-list dynamic-expiry-timeout 0
+!
 device-tracking tracking
+!
+device-tracking policy IPDT_MAX_10
+ limit address-count 10
+ no protocol udp
+ tracking enable
 !
 device-tracking policy IPDT_POLICY
  no protocol udp
@@ -136,14 +172,14 @@ flow record dnacrecord
  collect connection new-connections
 !
 !
-flow exporter 10.10.0.30
- destination 10.10.0.30
+flow exporter 10.10.0.20
+ destination 10.10.0.20
  transport udp 6007
 !
 !
 flow exporter dnacexporter
- destination 10.10.0.30
- source Vlan2
+ destination 10.10.0.20
+ source Tunnel1
  transport udp 6007
  export-protocol ipfix
  option interface-table timeout 10
@@ -151,11 +187,6 @@ flow exporter dnacexporter
  option sampler-table
  option application-table timeout 10
  option application-attributes timeout 10
-!
-!
-flow exporter 10.10.0.20
- destination 10.10.0.20
- transport udp 6007
 !
 !
 flow monitor dnacmonitor
@@ -174,36 +205,35 @@ key xxxxxxxx
   key-string xxxxxxxx
 !
 crytpo pki xxxxxxx
- enrollment pkcs12
- revocation-check crl
-!
-crytpo pki xxxxxxx
  enrollment selfsigned
  subject-name xxxxxxxx
  revocation-check none
  rsakeypair TP-self-signed- xxxxxxxx
 !
 crytpo pki xxxxxxx
+ enrollment pkcs12
+ revocation-check none
+!
+crytpo pki xxxxxxx
  enrollment mode ra
  enrollment terminal
  usage ssl-client
  revocation-check crl none
- source interface Vlan2
+ source interface Loopback0
 !
 crytpo pki xxxxxxx
  enrollment url http://10.10.0.20:80/ejbca/publicweb/apply/scep/sdnscep
- fqdn DSW-C9300-TRANSIT.sda.base2hq.com
+ fqdn CSW-9300-CORE.base2hq.com
  subject-name xxxxxxxx
- subject-alt-name DSW-C9300-TRANSIT.sda.base2hq.com
- vrf WAN-Emulation
+ subject-alt-name CSW-9300-CORE.base2hq.com
  revocation-check crl
- source interface Vlan2
+ source interface Loopback0
  rsakeypair xxxxxxxx
  auto-enroll 80 regenerate
 !
 !
 crypto pki certificate chain xxxxxxx
- certificate ca xxxxxxxx
+ certificate self-signed xxxxxxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
@@ -232,7 +262,7 @@ crypto pki certificate chain xxxxxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
 quit
 crypto pki certificate chain xxxxxxx
- certificate self-signed xxxxxxxx
+ certificate ca xxxxxxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
@@ -357,8 +387,7 @@ crypto pki certificate xxxxxxxx
 !
 cts authorization list dnac-cts-list
 !
-service-template webauth-global-inactive
- inactivity-timer 3600 
+port-channel load-balance src-dst-ip
 service-template DEFAULT_LINKSEC_POLICY_MUST_SECURE
  linksec policy must-secure
 service-template DEFAULT_LINKSEC_POLICY_SHOULD_SECURE
@@ -368,23 +397,50 @@ service-template DEFAULT_CRITICAL_VOICE_TEMPLATE
 service-template DEFAULT_CRITICAL_DATA_TEMPLATE
 dot1x system-auth-control
 license boot level network-advantage addon dna-advantage
+license smart reservation
 license smart transport off
 !
 !
 diagnostic bootup level minimal
 !
 spanning-tree mode rapid-pvst
+spanning-tree portfast default
+spanning-tree portfast bpduguard default
 spanning-tree extend system-id
-spanning-tree vlan 1-4094 priority 61440
-memory free low-watermark processor 134356
+spanning-tree vlan 1-4094 priority 0
+memory free low-watermark processor 134432
+no policy-manager policy enable
 !
-no errdisable detect cause gbic-invalid
+errdisable recovery cause udld
 errdisable recovery cause bpduguard
+errdisable recovery cause security-violation
+errdisable recovery cause channel-misconfig
+errdisable recovery cause pagp-flap
+errdisable recovery cause dtp-flap
+errdisable recovery cause link-flap
+errdisable recovery cause sfp-config-mismatch
+errdisable recovery cause gbic-invalid
+errdisable recovery cause l2ptguard
+errdisable recovery cause psecure-violation
+errdisable recovery cause port-mode-failure
+errdisable recovery cause dhcp-rate-limit
+errdisable recovery cause pppoe-ia-rate-limit
+errdisable recovery cause mac-limit
+errdisable recovery cause storm-control
+errdisable recovery cause inline-power
+errdisable recovery cause arp-inspection
+errdisable recovery cause link-monitor-failure
+errdisable recovery cause oam-remote-failure
+errdisable recovery cause loopback
+errdisable recovery cause psp
 errdisable recovery interval 30
 
 et-analytics
  ip flow-export destination 10.10.0.212 2055
-username netadmin privilege 15 secret xxxxxx 
+username admin privilege 15 secret xxxxxx 
+username restadmin privilege 15 secret xxxxxx 
+username demouser privilege 3 view ALLOWEDCMDS secret 9 $14$4d4X$Ez4lxG8ve6nchE$Jj0ZuG3TAVo/DNpnHpDtjKX24TVQvOZ7RKcawj8WkFs
+username webadmin privilege 15 secret xxxxxx 
 !
 redundancy
  mode sso
@@ -398,8 +454,65 @@ crypto engine compliance shield disable
 transceiver type all
  monitoring
 !
-vlan 2
- name WAN-emulation
+vlan 10
+ name datacenter
+!
+vlan 20
+ name wirelessap
+!
+vlan 30
+ name wireddata
+!
+vlan 40
+ name wirelessdata
+!
+vlan 90
+ name guest
+!
+vlan 666
+ name firewalldmz
+!
+vlan 777
+ name vmotion
+!
+vlan 888
+ name dnac-intracluster
+!
+vlan 889
+ name dnaclab-intracluster
+lldp run
+!
+class-map type control subscriber match-all AAA_SVR_DOWN_AUTHD_HOST
+ match authorization-status authorized
+ match result-type aaa-timeout
+!
+class-map type control subscriber match-all AAA_SVR_DOWN_UNAUTHD_HOST
+ match authorization-status unauthorized
+ match result-type aaa-timeout
+!
+class-map type control subscriber match-all AUTHC_SUCCESS-AUTHZ_FAIL
+ match authorization-status unauthorized
+ match result-type success
+!
+class-map type control subscriber match-all DOT1X_FAILED
+ match method dot1x
+ match result-type method dot1x authoritative
+!
+class-map type control subscriber match-all DOT1X_NO_RESP
+ match method dot1x
+ match result-type method dot1x agent-not-found
+!
+class-map type control subscriber match-any IN_CRITICAL_AUTH_CLOSED_MODE
+ match activated-service-template DefaultCriticalAuthVlan_SRV_TEMPLATE
+ match activated-service-template DefaultCriticalVoice_SRV_TEMPLATE
+!
+class-map type control subscriber match-all MAB_FAILED
+ match method mab
+ match result-type method mab authoritative
+!
+class-map type control subscriber match-none NOT_IN_CRITICAL_AUTH_CLOSED_MODE
+ match activated-service-template DefaultCriticalAuthVlan_SRV_TEMPLATE
+ match activated-service-template DefaultCriticalVoice_SRV_TEMPLATE
 !
 !
 class-map match-any system-cpp-police-ewlc-control
@@ -504,12 +617,12 @@ class-map match-any system-cpp-police-dhcp-snooping
   description DHCP snooping
 class-map match-any system-cpp-police-ios-routing
   description L2 control, Topology control, Routing control, Low Latency
+class-map match-any DNA-MARKING_IN#TUNNELED-NBAR
+ match access-group name DNA-MARKING_IN#TUNNELED-NBAR__acl
 class-map match-any DNA-EZQOS_2P6Q3T_9K#TRANSACTIONAL-DATA
  match dscp af23 
  match dscp af21 
  match dscp af22 
-class-map match-any DNA-MARKING_IN#TUNNELED-NBAR
- match access-group name DNA-MARKING_IN#TUNNELED-NBAR__acl
 class-map match-any system-cpp-police-system-critical
   description System Critical and Gold Pkt
 class-map match-any system-cpp-police-ios-feature
@@ -519,6 +632,53 @@ class-map match-any DNA-EZQOS_2P6Q3T_9K#MULTIMEDIA-STREAMING
  match dscp af33 
  match dscp af31 
 !
+!
+policy-map type control subscriber PMAP_WiredDot1xClosed_Template
+ event session-started match-all
+  10 class always do-until-failure
+   10 authenticate using dot1x retries 2 retry-time 0 priority 10
+ event authentication-failure match-first
+  5 class DOT1X_FAILED do-until-failure
+   10 terminate dot1x
+   20 authenticate using mab priority 20
+  10 class AAA_SVR_DOWN_UNAUTHD_HOST do-until-failure
+   30 authorize
+   40 pause reauthentication
+  20 class AAA_SVR_DOWN_AUTHD_HOST do-until-failure
+   10 pause reauthentication
+   20 authorize
+  30 class DOT1X_NO_RESP do-until-failure
+   10 terminate dot1x
+   20 authenticate using mab priority 20
+  40 class MAB_FAILED do-until-failure
+   10 terminate mab
+   20 authentication-restart 60
+  50 class always do-until-failure
+   10 terminate dot1x
+   20 authenticate using mab priority 20
+  60 class always do-until-failure
+   10 terminate dot1x
+   20 terminate mab
+   30 authentication-restart 60
+ event aaa-available match-all
+  10 class IN_CRITICAL_AUTH_CLOSED_MODE do-until-failure
+   10 clear-session
+  20 class NOT_IN_CRITICAL_AUTH_CLOSED_MODE do-until-failure
+   10 resume reauthentication
+ event agent-found match-all
+  10 class always do-until-failure
+   10 terminate mab
+   20 authenticate using dot1x retries 2 retry-time 0 priority 10
+ event inactivity-timeout match-all
+  10 class always do-until-failure
+   10 clear-session
+ event authentication-success match-all
+ event violation match-all
+  10 class always do-until-failure
+   10 restrict
+ event authorization-failure match-all
+  10 class AUTHC_SUCCESS-AUTHZ_FAIL do-until-failure
+   10 authentication-restart 60
 !
 policy-map system-cpp-policy
 policy-map DNA-dscp#APIC_QOS_Q_OUT
@@ -624,196 +784,292 @@ policy-map DNA-MARKING_IN
 !
 !
 !
+interface Loopback0
+ description RP and MGMT address
+ ip address 10.0.0.254 255.255.255.255
+ ip pim sparse-mode
+ ip router isis 
+ ntp broadcast
+!
+interface Port-channel110
+ description WLC lan
+ switchport trunk native vlan 10
+ switchport trunk allowed vlan 10,30,40,90
+ switchport mode trunk
+ switchport nonegotiate
+ ip dhcp snooping trust
+!
+interface Tunnel1
+ no ip address
+!
 interface GigabitEthernet0/0
  vrf forwarding Mgmt-vrf
  no ip address
+ shutdown
  negotiation auto
 !
 interface GigabitEthernet1/0/1
- description Link - FUSION-RTR - GigabitEthernet0/0/0
- switchport access vlan 2
- switchport mode access
- switchport nonegotiate
- et-analytics enable
- spanning-tree portfast
- spanning-tree bpduguard enable
+ description Link - RTR-4331-BORDER - GigabitEthernet0/0/1
+ no switchport
+ ip address 10.0.1.5 255.255.255.254
+ ip pim sparse-mode
+ ip router isis 
+ speed 1000
+ duplex full
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
 !
 interface GigabitEthernet1/0/2
- device-tracking attach-policy IPDT_POLICY
+ description Link - TERM-SERVER - GigabitEthernet0/0
+ switchport mode access
+ device-tracking attach-policy IPDT_MAX_10
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/3
+ description MERAKI lan uplink
+ switchport access vlan 30
+ switchport mode access
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/4
+ description MERAKI lan uplink
+ switchport access vlan 30
+ switchport mode access
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/5
+ description VRF GUEST future
+ switchport trunk native vlan 90
+ switchport trunk allowed vlan 90,666
+ switchport mode trunk
  device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
- et-analytics enable
+ shutdown
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/6
  device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/7
+ description UPC lan
+ switchport access vlan 10
+ switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/8
+ description UPC lan
+ switchport access vlan 10
+ switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/9
  device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/10
+ description PDU lan
+ switchport access vlan 10
+ switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
+ speed 100
+ duplex full
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/11
+ description PDU lan
+ switchport access vlan 10
+ switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
+ speed 100
+ duplex full
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/12
+ description PDU lan
+ switchport access vlan 10
+ switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
+ speed 100
+ duplex full
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/13
+ description ESXi-CIMC1 lan
+ switchport access vlan 10
+ switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
+ speed 100
+ duplex full
  et-analytics enable
+ spanning-tree portfast
+ spanning-tree guard root
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/14
+ description ESXi-CIMC2 lan
+ switchport access vlan 10
+ switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
+ speed 100
+ duplex full
  et-analytics enable
+ spanning-tree portfast
+ spanning-tree guard root
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/15
- device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
+ description Ruh-Ro Something Changed!
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/16
- device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/17
+ description DNAC-CIMC lan
+ switchport access vlan 10
+ switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
+ speed 100
+ duplex full
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/18
+ description DNAC lan
+ switchport access vlan 10
+ switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
+ speed 1000
+ duplex full
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/19
+ description DNAC-LAB-CIMC lan
+ switchport access vlan 10
+ switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
+ speed 100
+ duplex full
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/20
+ description DNAC-LAB lan
+ switchport access vlan 10
+ switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
+ ip access-group DEMO-NO-WEBSITE-FOR-YOU in
+ ip access-group DEMO-NO-WEBSITE-FOR-YOU out
+ speed 1000
+ duplex full
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/21
- device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
@@ -821,8 +1077,6 @@ interface GigabitEthernet1/0/21
 !
 interface GigabitEthernet1/0/22
  device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
@@ -830,8 +1084,6 @@ interface GigabitEthernet1/0/22
 !
 interface GigabitEthernet1/0/23
  device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
@@ -839,17 +1091,254 @@ interface GigabitEthernet1/0/23
 !
 interface GigabitEthernet1/0/24
  device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
-interface GigabitEthernet1/1/1
+interface GigabitEthernet1/0/25
+ device-tracking attach-policy IPDT_POLICY
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/26
+ description IOT
+ switchport access vlan 40
+ switchport mode access
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_POLICY
+ speed 100
+ duplex full
+ authentication periodic
+ authentication timer reauthenticate server
+ access-session closed
+ access-session port-control auto
+ mab
+ dot1x pae authenticator
+ dot1x timeout supp-timeout 7
+ dot1x max-req 3
+ et-analytics enable
+ spanning-tree portfast
+ service-policy type control subscriber PMAP_WiredDot1xClosed_Template
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/27
+ device-tracking attach-policy IPDT_POLICY
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/28
+ device-tracking attach-policy IPDT_POLICY
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/29
+ device-tracking attach-policy IPDT_POLICY
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/30
+ device-tracking attach-policy IPDT_POLICY
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/31
+ device-tracking attach-policy IPDT_POLICY
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/32
+ device-tracking attach-policy IPDT_POLICY
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/33
+ device-tracking attach-policy IPDT_POLICY
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/34
+ device-tracking attach-policy IPDT_POLICY
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/35
+ device-tracking attach-policy IPDT_POLICY
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/36
+ device-tracking attach-policy IPDT_POLICY
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/37
+ device-tracking attach-policy IPDT_POLICY
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/38
+ device-tracking attach-policy IPDT_POLICY
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/39
+ description BLUERAY lan
+ switchport access vlan 30
+ switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
+ et-analytics enable
+ spanning-tree portfast
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/40
+ description Garage Door Opener lan
+ switchport access vlan 30
+ switchport mode access
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_POLICY
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ speed 10
+ duplex half
+ et-analytics enable
+ spanning-tree portfast
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/41
+ device-tracking attach-policy IPDT_POLICY
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/42
+ description AP - AP70F3 - GigabitEthernet0
+ switchport access vlan 30
+ switchport mode access
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ speed 1000
+ duplex full
+ et-analytics enable
+ spanning-tree portfast
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/43
+ et-analytics enable
+ service-policy input DNA-MARKING_IN
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip nbar protocol-discovery
+!
+interface GigabitEthernet1/0/44
+ description AP - KO-AP0C75 - GigabitEthernet0
+ switchport access vlan 20
+ switchport mode access
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ ip access-group ACL-DEFAULT in
+ speed 1000
+ duplex full
+ spanning-tree portfast
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+!
+interface GigabitEthernet1/0/45
+ description AP - PO-AP0C75 - GigabitEthernet0
+ switchport access vlan 20
+ switchport mode access
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ ip access-group ACL-DEFAULT in
+ speed 1000
+ duplex full
+ spanning-tree portfast
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+!
+interface GigabitEthernet1/0/46
+ description AP - GA-AP0C75 - GigabitEthernet0
+ switchport access vlan 20
+ switchport mode access
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ ip access-group ACL-DEFAULT in
+ speed 1000
+ duplex full
+ spanning-tree portfast
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+!
+interface GigabitEthernet1/0/47
+ description AP - MB-AP0C75 - GigabitEthernet0
+ switchport access vlan 20
+ switchport mode access
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ ip access-group ACL-DEFAULT in
+ speed 1000
+ duplex full
+ spanning-tree portfast
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+!
+interface GigabitEthernet1/0/48
+ description AP - BM-AP0C75 - GigabitEthernet0
+ switchport access vlan 20
+ switchport mode access
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ ip access-group ACL-DEFAULT in
+ speed 1000
+ duplex full
+ spanning-tree portfast
+ service-policy output DNA-dscp#APIC_QOS_Q_OUT
+!
+interface GigabitEthernet1/1/1
+ device-tracking attach-policy IPDT_POLICY
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
@@ -857,8 +1346,6 @@ interface GigabitEthernet1/1/1
 !
 interface GigabitEthernet1/1/2
  device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
@@ -866,8 +1353,6 @@ interface GigabitEthernet1/1/2
 !
 interface GigabitEthernet1/1/3
  device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
@@ -875,92 +1360,112 @@ interface GigabitEthernet1/1/3
 !
 interface GigabitEthernet1/1/4
  device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface TenGigabitEthernet1/1/1
+ description DNAC IntraCluster lan Link
+ switchport access vlan 888
+ switchport mode access
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface TenGigabitEthernet1/1/2
+ description DNAC-LAB IntraCluster lan Link
+ switchport access vlan 889
+ switchport mode access
  device-tracking attach-policy IPDT_POLICY
  ip flow monitor dnacmonitor input
  ip flow monitor dnacmonitor output
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface TenGigabitEthernet1/1/3
- device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
- et-analytics enable
- service-policy input DNA-MARKING_IN
+ description Link - DSW-C9300-TRANSIT - TenGigabitEthernet1/1/8
+ no switchport
+ ip address 10.127.255.1 255.255.255.240
+ ip helper-address 10.10.0.250
+ ip router isis 
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface TenGigabitEthernet1/1/4
- device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
- et-analytics enable
- service-policy input DNA-MARKING_IN
+ description Link - ASW-C9300-48-DEMO - TenGigabitEthernet1/1/8
+ switchport trunk allowed vlan 1,20,30,40
+ switchport mode trunk
+ device-tracking attach-policy IPDT_MAX_10
+ cts manual
+  policy static sgt 2 trusted
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
+ ip dhcp snooping trust
 !
 interface TenGigabitEthernet1/1/5
- device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
- et-analytics enable
- service-policy input DNA-MARKING_IN
+ description Link - WLC-C9800 - TenGigabitEthernet0/1/0
+ switchport trunk native vlan 10
+ switchport trunk allowed vlan 10,30,40,90
+ switchport mode trunk
+ switchport nonegotiate
+ cts manual
+  policy static sgt 2 trusted
+ channel-group 110 mode active
+ spanning-tree guard root
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
+ ip dhcp snooping trust
 !
 interface TenGigabitEthernet1/1/6
- device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
- et-analytics enable
- service-policy input DNA-MARKING_IN
+ description Link - WLC-C9800 - TenGigabitEthernet0/1/1
+ switchport trunk native vlan 10
+ switchport trunk allowed vlan 10,30,40,90
+ switchport mode trunk
+ switchport nonegotiate
+ cts manual
+  policy static sgt 2 trusted
+ channel-group 110 mode active
+ spanning-tree guard root
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
+ ip dhcp snooping trust
 !
 interface TenGigabitEthernet1/1/7
- device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
- et-analytics enable
+ description ESXi1 Data
+ switchport trunk allowed vlan 10,20,666,777
+ switchport mode trunk
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ spanning-tree portfast trunk
+ spanning-tree bpdufilter enable
+ spanning-tree bpduguard enable
+ spanning-tree guard root
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
+ ip dhcp snooping trust
 !
 interface TenGigabitEthernet1/1/8
- description Link - CSW-9300-CORE - TenGigabitEthernet1/1/3
- switchport access vlan 2
- switchport mode access
+ description ESXi2 Data
+ switchport trunk allowed vlan 10,20,666,777
+ switchport mode trunk
  switchport nonegotiate
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
- et-analytics enable
- spanning-tree portfast
+ device-tracking attach-policy IPDT_MAX_10
+ spanning-tree portfast trunk
+ spanning-tree bpdufilter enable
  spanning-tree bpduguard enable
+ spanning-tree guard root
+ service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
+ ip dhcp snooping trust
 !
 interface FortyGigabitEthernet1/1/1
  device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
@@ -968,8 +1473,6 @@ interface FortyGigabitEthernet1/1/1
 !
 interface FortyGigabitEthernet1/1/2
  device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
@@ -977,8 +1480,6 @@ interface FortyGigabitEthernet1/1/2
 !
 interface TwentyFiveGigE1/1/1
  device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
@@ -986,54 +1487,130 @@ interface TwentyFiveGigE1/1/1
 !
 interface TwentyFiveGigE1/1/2
  device-tracking attach-policy IPDT_POLICY
- ip flow monitor dnacmonitor input
- ip flow monitor dnacmonitor output
  et-analytics enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface AppGigabitEthernet1/0/1
+ switchport trunk allowed vlan 30
+ switchport mode trunk
 !
 interface Vlan1
- description Keep this interface down
- no ip address
- shutdown
-!
-interface Vlan2
- ip vrf forwarding WAN-Emulation
- ip address 10.127.255.3 255.255.255.0
+ description mgmt vlan - with pnp
+ ip address 10.1.1.254 255.255.255.0
+ ip helper-address 10.10.0.250
+ ip pim sparse-mode
  ip router isis 
- isis priority 0 level-1
- isis priority 0 level-2
+!
+interface Vlan10
+ description datacenter
+ ip address 10.10.0.254 255.255.255.0
+ ip helper-address 10.10.0.200
+ ip helper-address 10.10.0.250
+ ip pim sparse-mode
+!
+interface Vlan20
+ description wirelessap
+ ip address 10.20.0.254 255.255.255.0
+ ip helper-address 10.10.0.250
+ ip helper-address 10.10.0.200
+ ip pim sparse-mode
+!
+interface Vlan30
+ description wireddata
+ ip address 10.30.0.254 255.255.255.0
+ ip helper-address 10.10.0.250
+ ip helper-address 10.10.0.200
+ ip pim sparse-mode
+!
+interface Vlan40
+ description wirelessdata
+ ip address 10.40.0.254 255.255.255.0
+ ip helper-address 10.10.0.250
+ ip helper-address 10.10.0.200
+ ip pim sparse-mode
+!
+interface Vlan90
+ description guestdmz - no ip address
+ ip vrf forwarding guest
+ no ip address
+!
+interface Vlan666
+ description firewalldmz - no ip address
+ ip vrf forwarding firewalldmz
+ no ip address
 !
 router isis
- vrf WAN-Emulation
- net 49.0000.0010.0127.0003.00
+ net 49.0000.0010.0000.0254.00
  is-type level-2-only
- router-id Vlan2
+ router-id Loopback0
  domain-password xxxxxx
  metric-style transition
  no hello padding point-to-point
  log-adjacency-changes
- redistribute static ip
  passive-interface default
- no passive-interface Vlan2
+ no passive-interface Vlan1
+ no passive-interface GigabitEthernet1/0/1
+ no passive-interface TenGigabitEthernet1/1/3
+ no passive-interface Loopback0
 !
-ip default-gateway 10.127.255.1
+!
+!
+iox
 ip forward-protocol nd
+ip pim bsr-candidate Loopback0 0
+ip pim rp-candidate Loopback0
 ip http server
 ip http authentication local
 ip http secure-server
+ip http secure-trustpoint TP-self-signed-2891411466
 ip http max-connections 16
-ip http client source-interface Vlan2
-ip ftp source-interface Vlan2
-ip tftp source-interface Vlan2
-ip route 0.0.0.0 0.0.0.0 10.127.255.1
-ip ssh source-interface Vlan2
+ip http client source-interface Loopback0
+ip ftp source-interface Loopback0
+ip ftp username xxxxxxx
+ip ftp password 7 xxxxxxxx
+ip tftp source-interface Loopback0
+ip route 0.0.0.0 0.0.0.0 10.1.0.1 200
+ip ssh time-out 60
+ip ssh authentication-retries 2
+ip ssh source-interface Loopback0
 ip ssh version 2
+ip scp server enable
 !
 !
+ip access-list standard DEVICE-MGMT-ONLY
+ 10 permit 10.10.0.20
+ 20 permit 10.10.0.21
+ 30 permit 10.10.0.200
+ 40 permit 10.10.0.250
+ 50 permit 10.0.0.100
+!
+ip access-list extended ACL-ALLOW
+ 10 permit ip any any
+ip access-list extended ACL-DEFAULT
+ 10 permit udp any any eq ntp
+ 20 permit udp any eq bootpc any eq bootps
+ 30 permit udp any any eq domain
+ 40 permit icmp any any
+ 50 permit udp any any eq tftp
+ 60 permit tcp any any eq www
+ 70 permit tcp any any eq 443
+ 80 permit tcp any host 10.10.0.200 eq 8443
+ 90 permit udp any host 10.10.0.100 range 5246 5247
+ 100 permit ip any host 10.10.0.100
+ip access-list extended ACL-POSTURE-REDIRECT
+ 10 deny   udp any any eq domain
+ 20 deny   udp any host 10.10.0.200 eq 8905
+ 30 deny   udp any host 10.10.0.200 eq 8906
+ 40 deny   tcp any host 10.10.0.200 eq 8443
+ 50 deny   tcp any host 10.10.0.200 eq 8905
+ 60 deny   tcp any host 10.10.0.200 eq www
+ 70 permit ip any any
+ip access-list extended ACL-WEBAUTH-REDIRECT
+ 10 deny   udp any any eq domain
+ 20 deny   ip any host 10.10.0.200
+ 30 permit ip any any
 ip access-list extended ACL_WEBAUTH_REDIRECT
  30 deny   ip any host 10.10.0.200
  500 permit tcp any any eq www
@@ -1041,6 +1618,16 @@ ip access-list extended ACL_WEBAUTH_REDIRECT
  700 permit tcp any any eq 8443
  800 deny   udp any any eq domain
  900 deny   udp any eq bootpc any eq bootps
+ip access-list extended DEMO-NO-WEBSITE-FOR-YOU
+ 10 deny   tcp host 10.40.0.100 host 10.10.0.30 eq 443
+ 20 deny   tcp host 10.40.0.100 host 10.10.0.30 eq www
+ 30 deny   tcp host 10.40.0.100 host 10.10.0.31 eq 443
+ 40 deny   tcp host 10.40.0.100 host 10.10.0.31 eq www
+ 60 deny   tcp host 10.10.0.30 eq 443 host 10.40.0.100
+ 70 deny   tcp host 10.10.0.30 eq www host 10.40.0.100
+ 80 deny   tcp host 10.10.0.31 eq 443 host 10.40.0.100
+ 90 deny   tcp host 10.10.0.31 eq www host 10.40.0.100
+ 100 permit ip any any
 ip access-list extended DNA-MARKING_IN#OAM_CUSTOM__acl
  10 remark dns
  10 permit tcp any any eq domain
@@ -1054,14 +1641,25 @@ ip access-list extended DNA-MARKING_IN#TUNNELED-NBAR__acl
  30 remark vxlan
  30 permit udp any any eq 4789
 !
-ip radius source-interface Vlan2 vrf WAN-Emulation
-logging source-interface Vlan2 vrf WAN-Emulation
-logging host 10.10.0.20 vrf WAN-Emulation
+!
+ip radius source-interface Loopback0 
+ip sla enable reaction-alerts
+logging origin-id ip
+logging source-interface Loopback0
+logging host 10.10.0.20
+logging host 10.10.0.200 transport udp port 20514
 !
 !
-snmp-server community xxxxxxxx RO
+snmp-server engineID  xxxxxxx
+snmp-server group V3GROUP v3 auth read V3READ write V3WRITE access DEVICE-MGMT-ONLY
+snmp-server group AdminV3SNMP v3 auth 
+snmp-server view xxxxxxxx
+snmp-server view xxxxxxxx
 snmp-server community xxxxxxxx RW
-snmp-server trap-source Vlan2
+snmp-server community xxxxxxxx RO
+snmp-server trap-source Loopback0
+snmp-server location BASE2HQ
+snmp-server contact xxxxxxxx
 snmp-server enable traps snmp authentication linkdown linkup coldstart warmstart
 snmp-server enable traps flowmon
 snmp-server enable traps entity-perf throughput-notif
@@ -1094,6 +1692,7 @@ snmp-server enable traps udld status-change
 snmp-server enable traps fru-ctrl
 snmp-server enable traps flash insertion removal lowspace
 snmp-server enable traps energywise
+snmp-server enable traps power-ethernet group 1 threshold 80
 snmp-server enable traps power-ethernet police
 snmp-server enable traps entity
 snmp-server enable traps pw vc
@@ -1150,8 +1749,16 @@ snmp-server enable traps mac-notification change move threshold
 snmp-server enable traps vrfmib vrf-up vrf-down vnet-trunk-up vnet-trunk-down
 snmp-server enable traps mpls vpn
 snmp-server enable traps mpls rfc vpn
-snmp-server host 10.10.0.20 vrf WAN-Emulation version 2c xxxxxxx
-snmp-server host 10.10.0.30 version 2c xxxxxxxx 
+snmp-server host 10.10.0.21 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.1 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.2 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.20 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.200 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.3 version 3 auth xxxxxxxx 
+snmp-server host 10.10.0.20 version 2c xxxxxxxx 
+snmp-server host 10.10.0.20 version 2c xxxxxxxx 
+snmp-server host 10.20.0.200 version 2c xxxxxxxx 
+tftp-server flash:cat9k_iosxe.16.06.04.SPA.bin
 !
 radius-server attribute 6 on-for-login-auth
 radius-server attribute 6 support-multiple
@@ -1160,6 +1767,7 @@ radius-server attribute 25 access-request include
 radius-server attribute 31 mac format ietf upper-case
 radius-server attribute 31 send nas-port-detail mac-only
 radius-server dead-criteria time 5 tries 3
+radius-server retransmit 2
 radius-server deadtime 3
 !
 radius server dnac-radius_10.10.0.200
@@ -1191,22 +1799,214 @@ cts role-based sgt-map 10.10.0.252 sgt 14
 cts role-based enforcement
 cts role-based enforcement vlan-list 1-4094
 cts role-based sgt-caching
+banner login ^C
+  Session On $(hostname) Is Monitored!!!
+  *****************************LEGAL WARNING************************************
+  * This device is part of a Demonstration computer network and is provided for*
+  * official use by authorized users ONLY. Any information, documents, or      *
+  * materials in the network are the property of this firm. Unauthorized use,  *
+  * duplication, or disclosure of information or systems in this network is    *
+  * strictly prohibited by Federal Law (18 USC 10130). Use of this network     *
+  * constitutes consent to monitoring which may be released to firm management *
+  * and/or law enforcement agencies and may result in disciplinary action,     *
+  * civil action, and/or criminal prosecution.                                 *
+  ****************************LEGAL WARNING*************************************
+^C
+alias exec showdemoroute show isis ne | i .1.30
+alias exec showdemostatus show int status | i 1/1/4
+alias exec showdemocdp show cdp ne te 1/1/4 det | i IP|Device
+alias exec showdemo event manager run showdemo
+parser view ALLOWEDCMDS
+secret 5 xxxxxxxx
+ commands exec include all event manager run
+ commands exec include event manager
+ commands exec include event
+ commands exec exclude configure
+ commands exec include show isis neighbors
+ commands exec include show isis
+ commands exec include show cdp neighbors detail
+ commands exec include show cdp neighbors Bluetooth0/4 detail
+ commands exec include show cdp neighbors AppGigabitEthernet1/0/1 detail
+ commands exec include show cdp neighbors TwentyFiveGigE1/1/2 detail
+ commands exec include show cdp neighbors TwentyFiveGigE1/1/1 detail
+ commands exec include show cdp neighbors FortyGigabitEthernet1/1/2 detail
+ commands exec include show cdp neighbors FortyGigabitEthernet1/1/1 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/8 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/7 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/6 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/5 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/4 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/3 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/2 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/1 detail
+ commands exec include show cdp neighbors GigabitEthernet1/1/4 detail
+ commands exec include show cdp neighbors GigabitEthernet1/1/3 detail
+ commands exec include show cdp neighbors GigabitEthernet1/1/2 detail
+ commands exec include show cdp neighbors GigabitEthernet1/1/1 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/48 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/47 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/46 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/45 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/44 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/43 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/42 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/41 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/40 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/39 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/38 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/37 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/36 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/35 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/34 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/33 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/32 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/31 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/30 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/29 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/28 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/27 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/26 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/25 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/24 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/23 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/22 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/21 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/20 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/19 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/18 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/17 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/16 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/15 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/14 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/13 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/12 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/11 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/10 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/9 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/8 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/7 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/6 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/5 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/4 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/3 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/2 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/1 detail
+ commands exec include show cdp neighbors GigabitEthernet0/0 detail
+ commands exec include show cdp neighbors Tunnel2 detail
+ commands exec include show cdp neighbors Tunnel1 detail
+ commands exec include show cdp neighbors Tunnel0 detail
+ commands exec include show cdp neighbors Port-channel110 detail
+ commands exec include show cdp neighbors
+ commands exec include show cdp
+ commands exec include show interfaces status
+ commands exec include show interfaces Vlan666 status
+ commands exec include show interfaces Vlan90 status
+ commands exec include show interfaces Vlan40 status
+ commands exec include show interfaces Vlan30 status
+ commands exec include show interfaces Vlan20 status
+ commands exec include show interfaces Vlan10 status
+ commands exec include show interfaces Vlan1 status
+ commands exec include show interfaces Bluetooth0/4 status
+ commands exec include show interfaces AppGigabitEthernet1/0/1 status
+ commands exec include show interfaces TwentyFiveGigE1/1/2 status
+ commands exec include show interfaces TwentyFiveGigE1/1/1 status
+ commands exec include show interfaces FortyGigabitEthernet1/1/2 status
+ commands exec include show interfaces FortyGigabitEthernet1/1/1 status
+ commands exec include show interfaces TenGigabitEthernet1/1/8 status
+ commands exec include show interfaces TenGigabitEthernet1/1/7 status
+ commands exec include show interfaces TenGigabitEthernet1/1/6 status
+ commands exec include show interfaces TenGigabitEthernet1/1/5 status
+ commands exec include show interfaces TenGigabitEthernet1/1/4 status
+ commands exec include show interfaces TenGigabitEthernet1/1/3 status
+ commands exec include show interfaces TenGigabitEthernet1/1/2 status
+ commands exec include show interfaces TenGigabitEthernet1/1/1 status
+ commands exec include show interfaces GigabitEthernet1/1/4 status
+ commands exec include show interfaces GigabitEthernet1/1/3 status
+ commands exec include show interfaces GigabitEthernet1/1/2 status
+ commands exec include show interfaces GigabitEthernet1/1/1 status
+ commands exec include show interfaces GigabitEthernet1/0/48 status
+ commands exec include show interfaces GigabitEthernet1/0/47 status
+ commands exec include show interfaces GigabitEthernet1/0/46 status
+ commands exec include show interfaces GigabitEthernet1/0/45 status
+ commands exec include show interfaces GigabitEthernet1/0/44 status
+ commands exec include show interfaces GigabitEthernet1/0/43 status
+ commands exec include show interfaces GigabitEthernet1/0/42 status
+ commands exec include show interfaces GigabitEthernet1/0/41 status
+ commands exec include show interfaces GigabitEthernet1/0/40 status
+ commands exec include show interfaces GigabitEthernet1/0/39 status
+ commands exec include show interfaces GigabitEthernet1/0/38 status
+ commands exec include show interfaces GigabitEthernet1/0/37 status
+ commands exec include show interfaces GigabitEthernet1/0/36 status
+ commands exec include show interfaces GigabitEthernet1/0/35 status
+ commands exec include show interfaces GigabitEthernet1/0/34 status
+ commands exec include show interfaces GigabitEthernet1/0/33 status
+ commands exec include show interfaces GigabitEthernet1/0/32 status
+ commands exec include show interfaces GigabitEthernet1/0/31 status
+ commands exec include show interfaces GigabitEthernet1/0/30 status
+ commands exec include show interfaces GigabitEthernet1/0/29 status
+ commands exec include show interfaces GigabitEthernet1/0/28 status
+ commands exec include show interfaces GigabitEthernet1/0/27 status
+ commands exec include show interfaces GigabitEthernet1/0/26 status
+ commands exec include show interfaces GigabitEthernet1/0/25 status
+ commands exec include show interfaces GigabitEthernet1/0/24 status
+ commands exec include show interfaces GigabitEthernet1/0/23 status
+ commands exec include show interfaces GigabitEthernet1/0/22 status
+ commands exec include show interfaces GigabitEthernet1/0/21 status
+ commands exec include show interfaces GigabitEthernet1/0/20 status
+ commands exec include show interfaces GigabitEthernet1/0/19 status
+ commands exec include show interfaces GigabitEthernet1/0/18 status
+ commands exec include show interfaces GigabitEthernet1/0/17 status
+ commands exec include show interfaces GigabitEthernet1/0/16 status
+ commands exec include show interfaces GigabitEthernet1/0/15 status
+ commands exec include show interfaces GigabitEthernet1/0/14 status
+ commands exec include show interfaces GigabitEthernet1/0/13 status
+ commands exec include show interfaces GigabitEthernet1/0/12 status
+ commands exec include show interfaces GigabitEthernet1/0/11 status
+ commands exec include show interfaces GigabitEthernet1/0/10 status
+ commands exec include show interfaces GigabitEthernet1/0/9 status
+ commands exec include show interfaces GigabitEthernet1/0/8 status
+ commands exec include show interfaces GigabitEthernet1/0/7 status
+ commands exec include show interfaces GigabitEthernet1/0/6 status
+ commands exec include show interfaces GigabitEthernet1/0/5 status
+ commands exec include show interfaces GigabitEthernet1/0/4 status
+ commands exec include show interfaces GigabitEthernet1/0/3 status
+ commands exec include show interfaces GigabitEthernet1/0/2 status
+ commands exec include show interfaces GigabitEthernet1/0/1 status
+ commands exec include show interfaces GigabitEthernet0/0 status
+ commands exec include show interfaces Tunnel2 status
+ commands exec include show interfaces Tunnel1 status
+ commands exec include show interfaces Tunnel0 status
+ commands exec include show interfaces Port-channel110 status
+ commands exec include show interfaces Loopback0 status
+ commands exec include show interfaces Null0 status
+ commands exec include show interfaces
+ commands exec include show
+!
+!
 !
 line con 0
- exec-timeout 60 0
+ exec-timeout 0 0
  privilege level 15
+ authorization exec CON-LAB
  logging synchronous
+ login xxxxxx
  stopbits 1
 line vty 0 4
- exec-timeout 60 0
- privilege level 15
+ exec-timeout 0 0
+ authorization exec CON-LAB
  logging synchronous
- transport input telnet ssh
+ login xxxxxx
+ terminal-type mon
+ length 0
+ transport input ssh
 line vty 5 15
- exec-timeout 60 0
- privilege level 15
+ exec-timeout 0 0
+ authorization exec CON-VTY
  logging synchronous
- transport input telnet ssh
+ login xxxxxx
+ terminal-type mon
+ length 0
+ transport input ssh
 line vty 16 31
  transport input ssh
 !
@@ -1217,7 +2017,8 @@ call-home
  profile "CiscoTAC-1"
   active
   destination transport-method http
-ntp source Vlan2
+ntp source Loopback0
+ntp master 3
 ntp server 10.10.0.250
 !
 netconf ssh
@@ -1225,6 +2026,24 @@ netconf ssh
 !
 !
 !
+event manager applet showdemo
+ event none sync yes
+ action a1000 cli command "enable"
+ action a1010 puts ""
+ action a1020 puts "Showing DEMO switch ASW-C9300-48-DEMO connectivity"
+ action a1030 puts ""
+ action b1010 puts "Showing Interface Switch connected on"
+ action b1020 cli command "show int status | i 1/1/4"
+ action b1030 puts "$_cli_result"
+ action b1040 puts ""
+ action c1010 puts "Showing IP Address for Downstream Switch"
+ action c1020 cli command "show cdp ne te 1/1/4 det | i IP|Device"
+ action c1030 puts "$_cli_result"
+ action c1040 puts ""
+ action d1010 puts "Showing if ISIS Routing Established"
+ action d1020 cli command "show isis ne | i .1.30"
+ action d1030 puts "$_cli_result"
+ action d1040 puts ""
 event manager applet update-port
  event neighbor-discovery interface regexp GigabitEthernet.* cdp add
  action 101 regexp "(Switch|Router)" "$_nd_cdp_capabilities_string"
@@ -1248,13 +2067,36 @@ event manager applet update-port
  action 227   cli command "description Link - $host - $connectedport"
  action 230  end
  action 240 end
+event manager applet DAILY-COMPLIANCE-BREAK
+ event timer cron name DAILY-RESET cron-entry "30 08 * * 1-5"
+ action 1.0 syslog msg "RUN: 'DAILY-COMPLIANCE-BREAK'  EEM applet."
+ action 2.0 puts "DAILY-COMPLIANCE-BREAK"
+ action 2.1 cli command "enable"
+ action 2.2 cli command "config t"
+ action 2.3 cli command "int gi 1/0/15"
+ action 2.4 puts "New Description"
+ action 2.5 cli command "description Ruh-Ro Something Changed!"
+ action 2.6 cli command "exit"
+event manager applet DAILY-COMPLIANCE-FIX
+ event timer cron name DAILY-RESET cron-entry "30 17 * * 1-5"
+ action 1.0 syslog msg "RUN: 'DAILY-COMPLIANCE-FIX'  EEM applet."
+ action 2.0 puts "DAILY-COMPLIANCE-FIX"
+ action 2.1 cli command "enable"
+ action 2.2 cli command "config t"
+ action 2.3 cli command "int gi 1/0/15"
+ action 2.4 puts "Remove Description"
+ action 2.5 cli command "no description"
+ action 2.6 cli command "exit"
+ action 2.7 cli command "wr"
 !
+!
+pnp profile pnp_redirection_profile
+ transport https ipv4 10.10.0.20 port 443
 telemetry ietf subscription 500
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/poe_port_detail
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1262,8 +2104,7 @@ telemetry ietf subscription 501
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/poe_module
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1271,8 +2112,7 @@ telemetry ietf subscription 502
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/poe_stack
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1280,8 +2120,7 @@ telemetry ietf subscription 503
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/poe_switch
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1289,8 +2128,7 @@ telemetry ietf subscription 504
  encoding encode-tdl
  filter nested-uri /services;serviceName=ios_oper/platform_component;cname=0?platform_properties
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy periodic 30000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1298,8 +2136,7 @@ telemetry ietf subscription 550
  encoding encode-tdl
  filter tdl-uri /services;serviceName=smevent/sessionevent
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1307,8 +2144,7 @@ telemetry ietf subscription 551
  encoding encode-tdl
  filter tdl-uri /services;serviceName=sessmgr_oper/session_context_data
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1316,8 +2152,7 @@ telemetry ietf subscription 552
  encoding encode-tdl
  filter tdl-uri /services;serviceName=iosevent/sisf_mac_oper_state
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1325,8 +2160,7 @@ telemetry ietf subscription 553
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/sisf_db_wired_mac
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1334,8 +2168,7 @@ telemetry ietf subscription 554
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/cdp_neighbor_detail
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1343,8 +2176,7 @@ telemetry ietf subscription 555
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/cdp_neighbor_detail
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1352,8 +2184,7 @@ telemetry ietf subscription 600
  encoding encode-tdl
  filter tdl-uri /services;serviceName=sessmgr_oper/tbl_aaa_servers_stat
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1361,8 +2192,7 @@ telemetry ietf subscription 601
  encoding encode-tdl
  filter tdl-uri /services;serviceName=sessmgr_oper/tbl_aaa_servers_stat
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1370,8 +2200,7 @@ telemetry ietf subscription 602
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_emul_oper/lisp_routers;top_id=0/sessions
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1379,8 +2208,7 @@ telemetry ietf subscription 603
  encoding encode-tdl
  filter tdl-uri /services;serviceName=iosevent/lisp_tcp_session_state
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1388,8 +2216,7 @@ telemetry ietf subscription 604
  encoding encode-tdl
  filter nested-uri /services;serviceName=ios_emul_oper/lisp_routers;top_id=0/instances;iid=0/af;iaftype=LISP_TDL_IAF_IPV4/lisp_publisher
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1397,8 +2224,7 @@ telemetry ietf subscription 605
  encoding encode-tdl
  filter tdl-uri /services;serviceName=iosevent/lisp_pubsub_session_state
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1406,8 +2232,7 @@ telemetry ietf subscription 750
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_emul_oper/environment_sensor
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy periodic 30000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1415,8 +2240,7 @@ telemetry ietf subscription 751
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/platform_component
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy periodic 30000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1424,8 +2248,7 @@ telemetry ietf subscription 1020
  encoding encode-tdl
  filter tdl-uri /services;serviceName=iosevent/install_status
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1433,8 +2256,7 @@ telemetry ietf subscription 8882
  encoding encode-tdl
  filter tdl-transform trustSecCounterDelta
  receiver-type protocol
- source-address 10.127.255.3
- source-vrf WAN-Emulation
+ source-address 10.0.0.254
  stream native
  update-policy periodic 90000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -1478,6 +2300,18 @@ telemetry transform trustSecCounterDelta
   output-field 9
    field cts_rolebased_policy.last_updated_time
  specified
+app-hosting appid TEVA
+ app-vnic AppGigabitEthernet trunk
+  vlan 30 guest-interface 0
+   guest-ipaddress 10.30.0.5 netmask 255.255.255.0
+ app-default-gateway 10.30.0.254 guest-interface 0
+ app-resource docker
+  prepend-pkg-opts
+  run-opts 1 "-e TEAGENT_ACCOUNT_TOKEN=xmz6yub2mtc0ghd15d1y2dq8g6jp381t"
+  run-opts 2 "--hostname BASE2HQ-CSW-TEVA"
+ name-server0 10.10.0.250
+ start
 netconf-yang
+restconf
 end
 

@@ -35,5 +35,7 @@ TIME_ZONE = 'US/Eastern'
 
 # File location to be used for configurations
 CONFIG_PATH = f"."
-CONFIG_STORE = f"DNAC-CompMon-Data"
+CONFIG_STORE = f"DNAC-CompMon-Data/Configs"
+JSON_STORE = f"DNAC-CompMon-Data/JSONdata"
+REPORT_STORE = f"DNAC-CompMon-Data/Reports"
 COMPLIANCE_STORE = f"PrimeComplianceChecks"
