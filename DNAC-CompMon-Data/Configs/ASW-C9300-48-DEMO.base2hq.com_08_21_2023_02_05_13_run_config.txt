@@ -13,7 +13,7 @@ service sequence-numbers
 service call-home
 no platform punt-keepalive disable-kernel-core
 !
-hostname ASW-C9300-48-DEMO-hahahahaha
+hostname ASW-C9300-48-DEMO
 !
 !
 vrf definition Mgmt-vrf
@@ -2137,7 +2137,7 @@ ip access-list standard 20
  40 permit 10.20.0.0 0.0.0.255
 !
 !
-snmp-server community private RO
+snmp-server community xxxxxxxx RO
 snmp-server community xxxxxxxx RW 10
 snmp-server community xxxxxxxx RW 10
 snmp-server trap-source Vlan1

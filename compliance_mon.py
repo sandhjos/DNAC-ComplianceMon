@@ -20,6 +20,7 @@ import sys
 import os.path
 import datetime
 import time
+import pytz
 
 import requests
 import difflib
@@ -33,11 +34,12 @@ import dnac_apis
 
 from prime_compliance_dictionary import all_files_into_dict
 from difference_engine import compliance_run
+from service_email import system_notification
 
 from requests.auth import HTTPBasicAuth  # for Basic Auth
 from urllib3.exceptions import InsecureRequestWarning  # for insecure https warnings
 
-from config import DNAC_URL, DNAC_PASS, DNAC_USER, CONFIG_PATH, CONFIG_STORE, COMPLIANCE_STORE, DNAC_IP, DNAC_FQDN
+from config import DNAC_URL, DNAC_PASS, DNAC_USER, CONFIG_PATH, CONFIG_STORE, COMPLIANCE_STORE, DNAC_IP, DNAC_FQDN, JSON_STORE, REPORT_STORE
 
 urllib3.disable_warnings(InsecureRequestWarning)  # disable insecure https warnings
 
@@ -62,11 +64,18 @@ def pause():
     else:
         os.system('cls')
 
-def config_library(CONFIG_PATH, CONFIG_STORE):
+def data_library(CONFIG_PATH, CONFIG_STORE, REPORT_STORE, JSON_STORE):
+    Report_Files = os.path.join(CONFIG_PATH, REPORT_STORE)
+    if not os.path.exists(Report_Files):
+        os.makedirs(Report_Files)
+    Json_Files = os.path.join(CONFIG_PATH, JSON_STORE)
+    if not os.path.exists(Json_Files):
+        os.makedirs(Json_Files)
     Config_Files = os.path.join(CONFIG_PATH, CONFIG_STORE)
     if not os.path.exists(Config_Files):
         os.makedirs(Config_Files)
-    os.chdir(Config_Files)
+    #os.chdir(Config_Files)
+    return Config_Files, Report_Files, Json_Files
 
 def compare_configs(cfg1, cfg2):
     """
@@ -132,22 +141,23 @@ def main():
     AUDIT_DATABASE = {}
     COMPLIANCE_DIRECTORY = "IOSXE"
     COMP_CHECKS = os.path.join(CONFIG_PATH, COMPLIANCE_STORE, COMPLIANCE_DIRECTORY)
-    
+        
     AUDIT_DATABASE = all_files_into_dict(COMP_CHECKS)
     print(f"First the Audit Rules from Prime loaded for processing against configs\n\n",AUDIT_DATABASE)
     pause()   
-
-    config_library(CONFIG_PATH,CONFIG_STORE)
+    
+    Config_Files, Report_Files, Json_Files = data_library(CONFIG_PATH,CONFIG_STORE,REPORT_STORE,JSON_STORE)
+    os.chdir(Config_Files)
 
     temp_run_config = "temp_run_config.txt"
-
+    
     # logging, debug level, to file {application_run.log}
     logging.basicConfig(
         filename='application_run.log',
         level=logging.DEBUG,
         format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
-
+        
     print("DNA Center Compliance Monitor:\n")
     print("We are going to collect all configurations for routers and switches your DNA Center")
     print("\n\nDNA CENTER INTEROGATED: " + DNAC_FQDN + " @ IP ADDRESS: " + DNAC_IP)
@@ -162,18 +172,28 @@ def main():
     for device in all_devices_info:
         if device['family'] == 'Switches and Hubs' or device['family'] == 'Routers':
             all_devices_hostnames.append(device['hostname'])
+        
+    # Get the current date time in UTC timezone
+    now_utc = datetime.datetime.now(pytz.UTC)
+    # Convert to timezone
+    time_zone = 'US/Eastern'
+    tz = pytz.timezone(time_zone)
+    now_tz = now_utc.astimezone(tz)
+    # Format the date and time string
+    date_str = now_tz.strftime('%m/%d/%Y').replace('/', '_')
+    time_str = now_tz.strftime('%H:%M:%S').replace(':', '_')
     
     # get the config files, compare with existing (if one existing). Save new config if file not existing.
     for device in all_devices_hostnames:
         device_run_config = dnac_apis.get_device_config(device, dnac_token)
-        filename = str(device) + '_run_config.txt'
-
+        filename = str(device) + '_' + date_str + '_' + time_str + '_run_config.txt'
+        
         # save the running config to a temp file
         f_temp = open(temp_run_config, 'w')
         f_temp.write(device_run_config)
         f_temp.seek(0)  # reset the file pointer to 0
         f_temp.close()
-
+        
         # check for existing configuration file
         # if yes; run the check for changes; diff function
         # if not; save; run the diff function
@@ -181,7 +201,7 @@ def main():
         
         if os.path.isfile(filename):
             diff = compare_configs(filename, temp_run_config)
-
+            
             if diff != '':
                 # retrieve the device location using DNA C REST APIs
                 location = dnac_apis.get_device_location(device, dnac_token)
@@ -191,55 +211,57 @@ def main():
                     for line in f:
                         if 'Last configuration change' in line:
                             user_info = line
-
+                
                 # define the incident description and comment
                 short_description = 'Configuration Change Alert - ' + device
                 comment = 'The device with the name: ' + device + '\nhas detected a Configuration Change'
-
+                
                 print(comment)
-
+                
                 # get the device health from DNA Center
                 current_time_epoch = utils.get_epoch_current_time()
                 device_details = dnac_apis.get_device_health(device, current_time_epoch, dnac_token)
-
+                
                 device_sn = device_details['serialNumber']
                 device_mngmnt_ip_address = device_details['managementIpAddr']
                 device_family = device_details['platformId']
                 device_os_info = device_details['osType'] + ',  ' + device_details['softwareVersion']
                 device_health = device_details['overallHealth']
-
+                
                 updated_comment = '\nDevice location: ' + location
                 updated_comment += '\nDevice family: ' + device_family
                 updated_comment += '\nDevice OS info: ' + device_os_info
                 updated_comment += '\nDevice S/N: ' + device_sn
                 updated_comment += '\nDevice Health: ' + str(device_health) + '/10'
                 updated_comment += '\nDevice management IP address: ' + device_mngmnt_ip_address
-
+                
                 print(updated_comment)
-
+                
                 updated_comment = '\nThe configuration changes are\n' + diff + '\n\n' + user_info
-
+                
                 print(updated_comment)
-
+                
             else:
                 print('Device: ' + device + ' - No configuration changes detected')
-
+                
         else:
             # new device discovered, save the running configuration to a file in the folder with the name
             # {Config_Files}
-
+            
             f_config = open(filename, 'w')
             f_config.write(device_run_config)
             f_config.seek(0)
             f_config.close()
-
+            
             # retrieve the device management IP address
             device_mngmnt_ip_address = dnac_apis.get_device_management_ip(device, dnac_token)
-
-            print('Device: ' + device + ' - New device discovered\n\n\n')
+            
+            print('Device: ' + device + ' - New device discovered\n\n')
     
     pause()
-    compliance_run("./", AUDIT_DATABASE)
+    report = compliance_run("./", AUDIT_DATABASE, Report_Files, Json_Files)
+    system_notification(report)
+    
     #print('Wait for 10 seconds and start again')
     #time.sleep(10)
 

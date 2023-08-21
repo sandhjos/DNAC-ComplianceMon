@@ -90,7 +90,7 @@ def date_time(TIME_ZONE):
     # Format the date and time string
     date_str = now_tz.strftime('%m/%d/%Y')
     time_str = now_tz.strftime('%H:%M:%S')
-    print(time_str)
+    
     if is_dst:
         time_str += ' (DST)'
     return date_str, time_str

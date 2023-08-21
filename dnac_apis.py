@@ -38,6 +38,19 @@ def pprint(json_data):
     """
     print(json.dumps(json_data, indent=4, separators=(' , ', ' : ')))
 
+def test_dnac_jwt_token(dnac_url, dnac_auth):
+    """
+    Create the authorization token required to access DNA C
+    Call to DNA C - /api/system/v1/auth/login
+    :param dnac_auth - DNA C Basic Auth string
+    :return: DNA C JWT token
+    """
+
+    url = dnac_url + '/dna/system/api/v1/auth/token'
+    header = {'content-type': 'application/json'}
+    response = requests.post(url, auth=dnac_auth, headers=header, verify=False)
+    dnac_jwt_token = response.json()['Token']
+    return dnac_jwt_token
 
 def get_dnac_jwt_token(dnac_auth):
     """

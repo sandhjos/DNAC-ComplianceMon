@@ -39,24 +39,22 @@ def DNAC_setup(file_path):
 
     # Loop until valid input is given or cancel is entered
     while True:
-        dnac_ip = input("Enter the IP address of the DNA Center you wish to connect (or 'cancel' to exit): ")
+        dnac_ip = input("\n\nEnter the DNA Center IP address you wish to connect (or 'cancel' to exit): ")
         if dnac_ip.lower() == "cancel":
             break
-        dnac_usr = input("Enter the username for DNA Center: ")
-        dnac_pwd = input("Enter the password for DNA Center: ")
 
         # Test for a valid IP address
         try:
             socket.inet_aton(dnac_ip)
         except socket.error:
-            print("Invalid IP address. Please try again.")
+            print("\nInvalid IP address. Please try again.")
             continue
 
         # Test the connection to the server with a ping
         ping_cmd = ["ping", "-c", "1", "-W", "1", dnac_ip]
         ping_result = subprocess.run(ping_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if ping_result.returncode != 0:
-            print("Server is not reachable. Please try again.")
+            print("\nServer is not reachable. Please try again.")
             continue
 
         # Do a DNS lookup for the FQDN of the server
@@ -64,19 +62,23 @@ def DNAC_setup(file_path):
             dnac_fqdn = socket.getfqdn(dnac_ip)
             dns_lookup = socket.gethostbyname(dnac_fqdn)
             if dns_lookup != dnac_ip:
-                print("DNS lookup failed. Please try again.")
+                print("\nDNS lookup failed. Please try again.")
                 continue
         except socket.error:
             print("DNS lookup failed. Please try again.")
             continue
 
+        dnac_usr = input("Enter the username for DNA Center: ")
+        dnac_pwd = input("Enter the password for DNA Center: ")
+
         #Try connecting to DNA Center
         try:
             DNAC_AUTH = HTTPBasicAuth(dnac_usr, dnac_pwd)
-            dnac_token = dnac_apis.get_dnac_jwt_token(DNAC_AUTH)
-            print("DNA Center connection test passed.")
+            DNAC_URL = "https://" + dnac_ip
+            dnac_token = dnac_apis.test_dnac_jwt_token(DNAC_URL, DNAC_AUTH)
+            print("\nDNA Center connection test passed.")
         except:
-            print("Credentials failed. Please try again.")
+            print("\nCredentials failed. Please try again.")
             continue
 
         # If all tests pass, replace lines in the Python file
@@ -111,12 +113,12 @@ def SMTP_setup(file_path):
     # Loop until valid input is given or cancel is entered
     while True:
         # Ask for user input
-        email_address = input("Enter your Gmail address (or 'cancel' to exit): ")
+        email_address = input("\n\nEnter your Gmail address (or 'cancel' to exit): ")
         if email_address.lower() == "cancel":
             break
         email_password = getpass.getpass("Enter your Gmail password: ")
         email_recipient = input("Enter the recipient email address: ")
-        smtp_server = input("Enter the SMTP server address: ")
+        smtp_server = input("\nEnter the SMTP server address: ")
         smtp_port = input("Enter the SMTP port: ")
         
         # Test the connection to the SMTP server
@@ -126,10 +128,10 @@ def SMTP_setup(file_path):
                 server.starttls(context=context)
                 server.login(email_address, email_password)
         except smtplib.SMTPAuthenticationError:
-            print("Authentication failed. Please try again.")
+            print("\nAuthentication failed. Please try again.")
             continue
         except:
-            print("Connection to SMTP server failed. Please try again.")
+            print("\nConnection to SMTP server failed. Please try again.")
             continue
         
         # Send a test email
@@ -142,11 +144,11 @@ def SMTP_setup(file_path):
                 server.login(email_address, email_password)
                 server.sendmail(email_address, email_recipient, message)
         except:
-            print("Failed to send test email. Please try again.")
+            print("\nFailed to send test email. Please try again.")
             continue
         
         # Print a success message and exit the loop
-        print("Test email sent successfully!")
+        print("\nTest email sent successfully!")
 
         # If all tests pass, replace lines in the Python file
         with open(file_path, "r") as f:
@@ -169,7 +171,7 @@ def SMTP_setup(file_path):
             f.writelines(new_lines)
 
         # Print a success message and exit the loop
-        print("SMTP Server information updated successfully.")
+        print("\nSMTP Server information updated successfully.")
         break
     return
 
@@ -181,12 +183,12 @@ def TZONE_setup(file_path):
     # Loop until valid input is given or cancel is entered
     while True:
         print("\n\nThe Time Zone is currently set for " + TIME_ZONE + ".\n\n")
-        dnac_ip = input("To set the time zone to another value enter [yes|y] (or 'cancel' to exit): ")
-        if dnac_ip.lower() == "cancel":
+        check = input("\nTo change the time zone enter [yes|y] (or 'cancel' to exit): ")
+        if check.lower() == "cancel":
             break
 
         # Display a list of available countries
-        print("Available countries:")
+        print("\n\nAvailable countries:")
         country_codes = list(pytz.country_names.keys())
         max_len = max([len(pytz.country_names[cc]) for cc in country_codes])
         num_cols = 3
@@ -200,10 +202,10 @@ def TZONE_setup(file_path):
         
         # Validate the country code entered by the user
         if country_code not in pytz.country_names:
-            print("Invalid country code. Please try again.")
+            print("\nInvalid country code. Please try again.")
         else:
             # Display a list of available timezones for the selected country
-            print(f"\nAvailable timezones for {pytz.country_names[country_code]}:")
+            print(f"\n\nAvailable timezones for {pytz.country_names[country_code]}:")
             timezones = pytz.country_timezones.get(country_code)
             max_len = max([len(tz) for tz in timezones])
             num_cols = 3
@@ -219,7 +221,7 @@ def TZONE_setup(file_path):
                 selected_timezone = timezones[timezone_idx]
                 print("\nSelected timezone:", selected_timezone)
             except (ValueError, IndexError):
-                print("Invalid timezone number. Please try again.")
+                print("\nInvalid timezone number. Please try again.")
             
             # If all tests pass, replace lines in the Python file
             with open(file_path, "r") as f:
@@ -234,7 +236,7 @@ def TZONE_setup(file_path):
                 f.writelines(new_lines)
 
             # Print a success message and exit the loop
-            print("Time Zone information updated successfully.")
+            print("\nTime Zone information updated successfully.")
             break
 
     return

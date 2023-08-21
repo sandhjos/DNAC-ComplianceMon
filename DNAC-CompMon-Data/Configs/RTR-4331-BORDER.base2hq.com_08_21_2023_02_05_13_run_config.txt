@@ -1,9 +1,9 @@
 
 Building configuration...
 
-Current configuration : 42147 bytes
+Current configuration : 42156 bytes
 !
-! Last configuration change at 18:55:53 EDT Sun Jul 30 2023
+! Last configuration change at 19:53:06 EDT Wed Aug 16 2023 by admin
 !
 version 17.6
 service tcp-keepalives-in
@@ -582,7 +582,7 @@ interface GigabitEthernet0/0/0
  ip pim sparse-mode
  ip nbar protocol-discovery
  ip authentication mode eigrp 100 md5
- ip authentication key-chain eigrp xxxxxxxxxx
+ip authentication key-chain eigrp xxxxxxxxxx
  speed 1000
  no negotiation auto
  performance monitor context ASSURANCE 
