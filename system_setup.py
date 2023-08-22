@@ -27,8 +27,9 @@ import dnac_apis
 import smtplib
 import ssl
 import getpass
+import zipfile
 import pytz
-from config import TIME_ZONE
+from config import TIME_ZONE, CONFIG_PATH, COMPLIANCE_STORE
 
 #     ----------------------------- DEFINITIONS -----------------------------
 
@@ -252,7 +253,8 @@ def system_settings():
         print("1. DNA Center Connection Settings")
         print("2. SMTP Connection Settings")
         print("3. Time Zone Settings")
-        print("4. Schedule Settings")
+        print("4. Upload Prime Rules for IOS-XE")
+        print("5. Schedule Settings")
         menu_input = input("\n\nEnter a number from above for setup (or 'cancel' to exit): ")
 
         if menu_input.lower() == "cancel":
@@ -260,7 +262,7 @@ def system_settings():
 
         # Test the connection to the SMTP server
         try:
-            if int(menu_input) <= 3 and int(menu_input) >= 1:
+            if int(menu_input) <= 4 and int(menu_input) >= 1:
                 # If all the tests pass
                 if int(menu_input) == 1:
                     DNAC_setup(file_path)
@@ -268,10 +270,33 @@ def system_settings():
                     SMTP_setup(file_path)
                 elif int(menu_input) == 3:
                     TZONE_setup(file_path)
+                elif int(menu_input) == 4:
+                    PRIME_import(file_path)
         except:
-            print("\nValid selections only are 1 to 2. Please try again.")
+            print("\nValid selections only are 1 to 4. Please try again.")
             continue
     return
+
+def PRIME_import(zip_file_path):
+    #zip_file_path = "path/to/zip/file.zip"
+    Compliance_Files = os.path.join(CONFIG_PATH, COMPLIANCE_STORE, "IOSXE")
+    print(Compliance_Files)
+
+    # Loop until valid input is given or cancel is entered
+    while True:
+        file_path = input("\n\nEnter the file location to be uploaded (or 'cancel' to exit): ")
+        if file_path.lower() == "cancel":
+            break
+        
+        if not os.path.exists(Compliance_Files):
+            os.makedirs(Compliance_Files)
+            
+        # Open the zip file and extract its contents to the destination folder
+        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+            zip_ref.extractall(Compliance_Files)
+        
+        # Print a message to confirm that the extraction was successful
+        print("\n\nThe zip file has been extracted to the destination folder.")
 
 #     ----------------------------- MAIN -----------------------------
 
