@@ -31,7 +31,7 @@ SMTP_PASS = "16-digit-app-password"
 NOTIFICATION_EMAIL = "receiver@gmail.com"
 
 # Update this section for the Time Zone
-TIME_ZONE = 'US/Eastern'
+TIME_ZONE = 'America/Indiana/Indianapolis'
 
 # File location to be used for configurations
 CONFIG_PATH = f"./"
