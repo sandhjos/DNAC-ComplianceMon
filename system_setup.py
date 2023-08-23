@@ -29,6 +29,7 @@ import ssl
 import getpass
 import zipfile
 import pytz
+from service_scheduler import *
 from config import TIME_ZONE, CONFIG_PATH, COMPLIANCE_STORE
 
 #     ----------------------------- DEFINITIONS -----------------------------
@@ -166,6 +167,8 @@ def SMTP_setup(file_path):
                 new_lines.append(f"SMTP_PASS = '{email_password}'\n")
             elif "NOTIFICATION_EMAIL =" in line:
                 new_lines.append(f"NOTIFICATION_EMAIL = '{email_recipient}'\n")
+            elif "SMTP_FLAG =" in line:
+                new_lines.append(f"SMTP_FLAG = True\n")
             else:
                 new_lines.append(line)
         with open(file_path, "w") as f:
@@ -262,7 +265,7 @@ def system_settings():
 
         # Test the connection to the SMTP server
         try:
-            if int(menu_input) <= 4 and int(menu_input) >= 1:
+            if int(menu_input) <= 5 and int(menu_input) >= 1:
                 # If all the tests pass
                 if int(menu_input) == 1:
                     DNAC_setup(file_path)
@@ -272,8 +275,10 @@ def system_settings():
                     TZONE_setup(file_path)
                 elif int(menu_input) == 4:
                     PRIME_import(CONFIG_PATH, COMPLIANCE_STORE)
+                elif int(menu_input) == 5:
+                    menu_scheduler()
         except:
-            print("\nValid selections only are 1 to 4. Please try again.")
+            print("\nValid selections only are 1 to 5. Please try again.")
             continue
     return
 
@@ -311,7 +316,6 @@ def PRIME_import(CONFIG_PATH, COMPLIANCE_STORE):
 #     ----------------------------- MAIN -----------------------------
 
 # code below for development purposes and testing only
-"""
+
 if __name__ == '__main__':
     system_settings()
-"""

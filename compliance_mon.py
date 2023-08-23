@@ -39,7 +39,7 @@ from service_email import system_notification
 from requests.auth import HTTPBasicAuth  # for Basic Auth
 from urllib3.exceptions import InsecureRequestWarning  # for insecure https warnings
 
-from config import DNAC_URL, DNAC_PASS, DNAC_USER, CONFIG_PATH, CONFIG_STORE, COMPLIANCE_STORE, DNAC_IP, DNAC_FQDN, JSON_STORE, REPORT_STORE
+from config import DNAC_URL, DNAC_PASS, DNAC_USER, CONFIG_PATH, CONFIG_STORE, COMPLIANCE_STORE, DNAC_IP, DNAC_FQDN, JSON_STORE, REPORT_STORE, SMTP_FLAG
 
 urllib3.disable_warnings(InsecureRequestWarning)  # disable insecure https warnings
 
@@ -260,7 +260,11 @@ def main():
     
     pause()
     report = compliance_run("./", AUDIT_DATABASE, Report_Files, Json_Files)
-    system_notification(report)
+    
+    if SMTP_FLAG == True:
+        system_notification(report)
+    else:
+        print('\n\nUnable to send Notification Email - as SMTP settings are not set.')
     
     #print('Wait for 10 seconds and start again')
     #time.sleep(10)
