@@ -271,36 +271,47 @@ def system_settings():
                 elif int(menu_input) == 3:
                     TZONE_setup(file_path)
                 elif int(menu_input) == 4:
-                    PRIME_import(file_path)
+                    PRIME_import(CONFIG_PATH, COMPLIANCE_STORE)
         except:
             print("\nValid selections only are 1 to 4. Please try again.")
             continue
     return
 
-def PRIME_import(zip_file_path):
-    #zip_file_path = "path/to/zip/file.zip"
-    Compliance_Files = os.path.join(CONFIG_PATH, COMPLIANCE_STORE, "IOSXE")
-    print(Compliance_Files)
-
+def PRIME_import(CONFIG_PATH, COMPLIANCE_STORE):
+    
     # Loop until valid input is given or cancel is entered
     while True:
         file_path = input("\n\nEnter the file location to be uploaded (or 'cancel' to exit): ")
+
         if file_path.lower() == "cancel":
             break
+        elif file_path.startswith('~'):
+            file_path = os.path.expanduser(file_path)
         
+        file_name = os.path.splitext(os.path.basename(file_path))[0]
+        Compliance_Files = os.path.join(CONFIG_PATH, COMPLIANCE_STORE)
+        
+        test_str = os.path.join(CONFIG_PATH, COMPLIANCE_STORE, file_name)
+
         if not os.path.exists(Compliance_Files):
             os.makedirs(Compliance_Files)
-            
-        # Open the zip file and extract its contents to the destination folder
-        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
-            zip_ref.extractall(Compliance_Files)
         
-        # Print a message to confirm that the extraction was successful
-        print("\n\nThe zip file has been extracted to the destination folder.")
+        if not os.path.exists(test_str):
+            # Open the zip file and extract its contents to the destination folder
+            with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                zip_ref.extractall(Compliance_Files)
+        
+            # Print a message to confirm that the extraction was successful
+            print("\n\nThe zip file has been extracted to the destination folder.")
+            break
+        else:
+            print("\n\nThe Compliance Audits have already been extracted to the destination folder.")
+            break
 
 #     ----------------------------- MAIN -----------------------------
 
 # code below for development purposes and testing only
-
+"""
 if __name__ == '__main__':
     system_settings()
+"""
