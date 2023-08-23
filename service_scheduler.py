@@ -20,6 +20,9 @@ import os
 import sched
 import time
 
+scheduler = sched.scheduler(time.time, time.sleep)
+settings = {}
+
 #     ----------------------------- DEFINITIONS -----------------------------
 
 # Define function to run the scheduled program
@@ -228,10 +231,6 @@ def edit_schedule(schedule_name):
 		elif schedule_type == "recurring_monthly":
 			remove_schedule(schedule_name)
 			schedule_recurring_monthly(schedule_name)
-			
-		elif schedule_type == "recurring_monthly_weekly":
-			remove_schedule(schedule_name)
-			schedule_recurring_monthly_weekly(schedule_name)
 	else:
 		print(f"{schedule_name} is not found.")
 
@@ -245,6 +244,61 @@ def delete_schedule(schedule_name):
 
 # Initialize scheduler
 def menu_scheduler():
+    scheduler = sched.scheduler(time.time, time.sleep)
+    
+    # Load settings from file
+    settings_file = "settings.json"
+    if os.path.exists(settings_file):
+        with open(settings_file, "r") as f:
+            settings = json.load(f)
+    else:
+        settings = {"schedules": {}}
+    
+    while True:
+        print("\n\nSelect an option:")
+        print("1. Schedule program to run now")
+        print("2. Schedule program to run one time")
+        print("3. Schedule program to run daily")
+        print("4. Schedule program to run weekly")
+        print("5. Schedule program to run monthly")
+        print("6. Cancel a scheduled program")
+        print("7. Exit")
+        
+        # Get user input for menu selection
+        selection = input("\n\n> ")
+        
+        print("\n\n")
+        # Handle menu selection
+        if selection == "1":
+            schedule_name = input("Enter a name for the schedule: ")
+            schedule_now(schedule_name)
+        elif selection == "2":
+            schedule_name = input("Enter a name for the schedule: ")
+            schedule_one_time(schedule_name)
+        elif selection == "3":
+            schedule_name = input("Enter a name for the schedule: ")
+            schedule_recurring_daily(schedule_name)
+        elif selection == "4":
+            schedule_name = input("Enter a name for the schedule: ")
+            schedule_recurring_weekly(schedule_name)
+        elif selection == "5":
+            schedule_name = input("Enter a name for the schedule: ")
+            schedule_recurring_monthly(schedule_name)
+        elif selection == "6":
+            schedule_name = input("Enter the name of the schedule to cancel: ")
+            delete_schedule(schedule_name)
+        elif selection == "7":
+            break
+        else:
+            print("Invalid selection. Please try again.")        
+
+def main():
+    scheduler = sched.scheduler(time.time, time.sleep)
+    menu_scheduler()
+
+#     ----------------------------- MAIN -----------------------------
+
+if __name__ == '__main__':
     scheduler = sched.scheduler(time.time, time.sleep)
     
     # Load settings from file
@@ -290,8 +344,4 @@ def menu_scheduler():
         elif selection == "7":
             break
         else:
-            print("Invalid selection. Please try again.")        
-
-#     ----------------------------- MAIN -----------------------------
-
-#menu_scheduler()
+            print("Invalid selection. Please try again.")
