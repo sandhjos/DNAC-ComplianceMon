@@ -1,20 +1,29 @@
 
 Building configuration...
 
-Current configuration : 85277 bytes
+Current configuration : 84847 bytes
 !
-! Last configuration change at 20:15:04 UTC Tue Aug 22 2023
+! Last configuration change at 02:15:05 edt Wed Aug 23 2023
 !
 version 17.6
 service timestamps debug datetime msec
 service timestamps log datetime msec
 service password-encryption
-service sequence-numbers
 service call-home
-platform punt-keepalive disable-kernel-core
+no platform punt-keepalive disable-kernel-core
 !
-hostname SN-FJB2411D011
+hostname edge-1
 !
+!
+vrf definition Campus
+ !
+ address-family ipv4
+ exit-address-family
+!
+vrf definition Guest
+ !
+ address-family ipv4
+ exit-address-family
 !
 vrf definition Mgmt-vrf
  !
@@ -31,7 +40,7 @@ aaa new-model
 !
 aaa group server radius dnac-client-radius-group
  server name dnac-radius_10.10.0.200
- ip radius source-interface Vlan2047
+ ip radius source-interface Loopback0
 !
 aaa authentication login default local
 aaa authentication login dnac-cts-list group dnac-client-radius-group local
@@ -51,13 +60,16 @@ aaa server radius dynamic-author
 !
 aaa session-id common
 boot system switch all flash:packages.conf
-switch 1 provision c9300-48u
+clock timezone est 5 0
+clock summer-time edt recurring
+switch 1 provision c9300-24p
 software auto-upgrade enable
 !
 !
 !
 !
 !
+ip routing
 !
 !
 ip nbar http-services
@@ -76,28 +88,31 @@ ip nbar attribute-set socio TC3_BR0
 ip nbar attribute-set VUDU TC3_BR0
 !
 ip name-server 10.10.0.250
-ip domain lookup source-interface Vlan2047
+ip domain lookup source-interface Loopback0
 ip domain name sda.base2hq.com
+ip dhcp relay information option
 !
 !
 !
-ip dhcp snooping glean
 ip dhcp snooping vlan 1021-1022,2045,2047
-no ip dhcp snooping information option
 ip dhcp snooping
  login xxxxxx
-ipv6 mld snooping
+ipv6 nd raguard policy dnac-sda-permit-nd-raguardv6
+ device-role router
+!
+ipv6 dhcp guard policy dnac-sda-permit-dhcpv6
+ device-role server
 !
 !
 !
 !
 !
 !
-device-sensor filter-list cdp list iseCDP
- tlv name device-name
- tlv name capabilities-type
- tlv name version-type
- tlv name platform-type
+!
+device-sensor filter-list lldp list iseLLDP
+ tlv name system-name
+ tlv name system-description
+ tlv name system-capabilities
 !
 device-sensor filter-list dhcp list iseDHCP
  option name host-name
@@ -105,24 +120,27 @@ device-sensor filter-list dhcp list iseDHCP
  option name class-identifier
  option name v-i-vendor-class
 !
-device-sensor filter-list lldp list iseLLDP
- tlv name system-name
- tlv name system-description
- tlv name system-capabilities
+device-sensor filter-list cdp list iseCDP
+ tlv name device-name
+ tlv name capabilities-type
+ tlv name version-type
+ tlv name platform-type
 device-sensor filter-spec dhcp include list iseDHCP
 device-sensor filter-spec lldp include list iseLLDP
 device-sensor filter-spec cdp include list iseCDP
 device-sensor notify all-changes
 !
 !
+vtp domain cisco-pov
 vtp mode transparent
+mpls label mode all-vrfs protocol all-afs per-vrf
 avc sd-service
  segment AppRecognition
  controller
   address 10.10.0.20 
   destination-ports sensor-exporter 21730
   dscp 16
-  source-interface Vlan2047
+  source-interface Loopback0
   transport application-updates https url-prefix sdavc
  !
 !
@@ -156,6 +174,10 @@ parameter-map type subscriber attribute-to-service BUILTIN_DEVICE_TO_TEMPLATE
   20 interface-template LAP_INTERFACE_TEMPLATE
  110 map device-type regex "Cisco-CAT-LAP"
   10 interface-template LAP_INTERFACE_TEMPLATE
+ 200 map device-type regex "Aruba-AP"
+  10 interface-template ARUBA_ACCESS_POINT_AUTOCONF
+ 210 map device-type regex "Aruba-Device"
+  10 interface-template ARUBA_ACCESS_POINT_AUTOCONF
 !
 access-session attributes filter-list list Def_Acct_List
  cdp
@@ -205,23 +227,19 @@ crytpo pki xxxxxxx
  rsakeypair TP-self-signed- xxxxxxxx
 !
 crytpo pki xxxxxxx
- enrollment url flash://PnP-cert_10_38_20_UTC_Thu_Sep_22_2022
- revocation-check none
-!
-crytpo pki xxxxxxx
  enrollment mode ra
  enrollment terminal
  usage ssl-client
  revocation-check crl none
- source interface Vlan2047
+ source interface Loopback0
 !
 crytpo pki xxxxxxx
  enrollment url http://10.10.0.20:80/ejbca/publicweb/apply/scep/sdnscep
- fqdn SN-FJB2411D011.sda.base2hq.com
+ fqdn edge-1.sda.base2hq.com
  subject-name xxxxxxxx
- subject-alt-name SN-FJB2411D011.sda.base2hq.com
+ subject-alt-name edge-1.sda.base2hq.com
  revocation-check crl
- source interface Vlan2047
+ source interface Loopback0
  rsakeypair xxxxxxxx
  auto-enroll 80 regenerate
 !
@@ -316,38 +334,6 @@ crypto pki certificate chain xxxxxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
 quit
 crypto pki certificate chain xxxxxxx
- certificate ca xxxxxxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-quit
-crypto pki certificate chain xxxxxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
@@ -426,6 +412,7 @@ service-template DefaultCriticalAccess_SRV_TEMPLATE
  access-group IPV6_CRITICAL_AUTH_ACL
 dot1x system-auth-control
 dot1x critical eapol
+system mtu 9100
 license boot level network-advantage addon dna-advantage
 license smart transport off
 device classifier
@@ -435,10 +422,6 @@ diagnostic bootup level minimal
 !
 spanning-tree mode rapid-pvst
 spanning-tree extend system-id
-archive
- log config
-  logging enable
-  logging size 500
 memory free low-watermark processor 131709
 !
 errdisable recovery cause udld
@@ -497,6 +480,9 @@ vlan 2046
 vlan 2047
  name ExtendedNode
 lldp run
+!
+track 1 ip sla 1 reachability
+ delay down 60 up 60
 !
 class-map type control subscriber match-all AAA_SVR_DOWN_AUTHD_HOST
  match authorization-status authorized
@@ -656,6 +642,8 @@ class-map match-any DNA-EZQOS_2P6Q3T_9K#VOICE-PQ1
 class-map match-any system-cpp-police-stackwise-virt-control
   description Stackwise Virtual OOB
 class-map match-any DNA-MARKING_IN#VOICE_CUSTOM
+class-map match-any system-cpp-police-control-low-priority
+  description General punt
 class-map match-any DNA-MARKING_IN#SCAVENGER_CUSTOM
 class-map match-any AutoConf-4.0-Output-Multimedia-StrmQueue
  match dscp af31  af32  af33 
@@ -1080,6 +1068,8 @@ policy-map AutoConf-4.0-CiscoSoftPhone-Input-Policy
    conform-action transmit 
    exceed-action set-dscp-transmit dscp table policed-dscp
 policy-map system-cpp-policy
+ class system-cpp-police-control-low-priority
+  police rate 200 pps
 policy-map DNA-dscp#APIC_QOS_Q_OUT
  class DNA-EZQOS_2P6Q3T_9K#VOICE-PQ1
   priority level 1
@@ -1211,7 +1201,31 @@ autoconf enable
 template AP_INTERFACE_TEMPLATE
  switchport mode trunk
  switchport nonegotiate
+ switchport port-security aging type inactivity
  service-policy input AutoConf-4.0-Trust-Cos-Input-Policy
+!
+template ARUBA_ACCESS_POINT_AUTOCONF
+ switchport access vlan 2045
+ switchport trunk native vlan 2045
+ switchport trunk allowed vlan 1021,1022,2045
+ switchport mode trunk
+ description Access Point Interface
+!
+template ARUBA_ACCESS_POINT_DOT1X
+ dot1x pae authenticator
+ dot1x timeout supp-timeout 7
+ dot1x max-req 3
+ switchport access vlan 2045
+ switchport trunk native vlan 2045
+ switchport trunk allowed vlan 1021,1022,2045
+ switchport mode trunk
+ mab
+ access-session closed
+ access-session port-control auto
+ authentication periodic
+ authentication timer reauthenticate server
+ service-policy type control subscriber PMAP_DefaultWiredDot1xClosedAuth_MAB_1X
+ description Access Point Interface
 !
 template ApAutzTemplate
  switchport access vlan 2045
@@ -1223,6 +1237,7 @@ template DMP_INTERFACE_TEMPLATE
  spanning-tree bpduguard enable
  switchport mode access
  switchport block unicast
+ switchport port-security aging type inactivity
 !
 template DefaultWiredDot1xClosedAuth
  dot1x pae authenticator
@@ -1266,6 +1281,7 @@ template IP_CAMERA_INTERFACE_TEMPLATE
  spanning-tree bpduguard enable
  switchport mode access
  switchport block unicast
+ switchport port-security aging type inactivity
 !
 template IP_PHONE_INTERFACE_TEMPLATE
  storm-control broadcast level pps 1k
@@ -1275,8 +1291,6 @@ template IP_PHONE_INTERFACE_TEMPLATE
  spanning-tree bpduguard enable
  switchport mode access
  switchport block unicast
- switchport port-security aging type inactivity
- switchport port-security
  load-interval 30
  ip dhcp snooping limit rate 15
 !
@@ -1289,8 +1303,6 @@ template LAP_INTERFACE_TEMPLATE
  switchport access vlan 2045
  switchport mode access
  switchport block unicast
- switchport port-security aging type inactivity
- switchport port-security
  load-interval 30
  ip dhcp snooping limit rate 15
 !
@@ -1305,14 +1317,35 @@ template TP_INTERFACE_TEMPLATE
  spanning-tree bpduguard enable
  switchport mode access
  switchport port-security aging type inactivity
- switchport port-security
  load-interval 30
  ip dhcp snooping limit rate 15
 !
 !
+interface Loopback0
+ description Fabric Underlay RID - do not change
+ ip address 10.124.1.1 255.255.255.255
+ ip router isis 
+!
 interface Port-channel1
  switchport mode trunk
- ip dhcp snooping trust
+!
+interface LISP0
+!
+interface LISP0.4097
+!
+interface LISP0.4099
+!
+interface LISP0.4100
+!
+interface L2LISP0
+!
+interface L2LISP0.8189
+!
+interface L2LISP0.8190
+!
+interface L2LISP0.8192
+!
+interface L2LISP0.8193
 !
 interface GigabitEthernet0/0
  vrf forwarding Mgmt-vrf
@@ -1331,7 +1364,6 @@ interface GigabitEthernet1/0/1
  spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/2
  switchport mode access
@@ -1572,13 +1604,10 @@ interface GigabitEthernet1/0/20
  device-tracking attach-policy IPDT_POLICY
  dot1x timeout tx-period 2
  dot1x max-reauth-req 3
- et-analytics enable
  source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
  spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/21
  switchport mode access
@@ -1598,351 +1627,20 @@ interface GigabitEthernet1/0/22
  device-tracking attach-policy IPDT_POLICY
  dot1x timeout tx-period 2
  dot1x max-reauth-req 3
- et-analytics enable
  source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
  spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/23
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/24
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/25
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/26
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/27
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/28
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/29
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/30
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/31
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/32
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/33
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/34
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/35
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/36
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/37
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/38
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/39
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/40
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/41
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/42
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/43
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/44
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/45
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/46
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/47
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
-!
-interface GigabitEthernet1/0/48
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
- service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
 !
 interface GigabitEthernet1/1/1
  device-tracking attach-policy IPDT_POLICY
@@ -1973,18 +1671,34 @@ interface GigabitEthernet1/1/4
  ip nbar protocol-discovery
 !
 interface TenGigabitEthernet1/1/1
- device-tracking attach-policy IPDT_POLICY
- et-analytics enable
- service-policy input DNA-MARKING_IN
+ description L3 To Border1 te1/1/1
+ no switchport
+ dampening
+ ip address 10.125.0.2 255.255.255.252
+ no ip redirects
+ no ip proxy-arp
+ ip router isis 
+ ip lisp source-locator Loopback0
+ load-interval 30
+ carrier-delay msec 0
+ bfd interval 300 min_rx 300 multiplier 3
+ no bfd echo
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
 !
 interface TenGigabitEthernet1/1/2
- device-tracking attach-policy IPDT_POLICY
- et-analytics enable
- service-policy input DNA-MARKING_IN
+ description L3 To Border2 te1/1/2
+ no switchport
+ dampening
+ ip address 10.125.0.26 255.255.255.252
+ no ip redirects
+ no ip proxy-arp
+ ip router isis 
+ ip lisp source-locator Loopback0
+ load-interval 30
+ carrier-delay msec 0
+ bfd interval 300 min_rx 300 multiplier 3
+ no bfd echo
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
 !
 interface TenGigabitEthernet1/1/3
  device-tracking attach-policy IPDT_POLICY
@@ -2022,13 +1736,11 @@ interface TenGigabitEthernet1/1/7
  ip nbar protocol-discovery
 !
 interface TenGigabitEthernet1/1/8
- description PNP STARTUP VLAN
  switchport mode trunk
  cts manual
   policy static sgt 8000 trusted
  channel-group 1 mode desirable
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip dhcp snooping trust
 !
 interface FortyGigabitEthernet1/1/1
  device-tracking attach-policy IPDT_POLICY
@@ -2064,25 +1776,191 @@ interface Vlan1
  no ip address
  shutdown
 !
-interface Vlan2047
- ip dhcp client client-id ascii cisco-bc5a.56c5.cd73-Vl2047
- ip address dhcp
+interface Vlan1021
+ description Configured from Cisco DNA-Center
+ mac-address 0000.0c9f.f878
+ vrf forwarding Campus
+ ip address 10.100.0.1 255.255.0.0
+ ip helper-address 10.10.0.250
+ no ip redirects
+ ip route-cache same-interface
+ no lisp mobility liveness test
+ lisp mobility Campus-IPV4
 !
-ip default-gateway 10.126.2.1
+interface Vlan1022
+ description Configured from Cisco DNA-Center
+ mac-address 0000.0c9f.f69f
+ vrf forwarding Guest
+ ip address 10.99.0.1 255.255.0.0
+ ip helper-address 10.10.0.250
+ no ip redirects
+ ip route-cache same-interface
+ no lisp mobility liveness test
+ lisp mobility Guest-IPV4
+!
+interface Vlan2045
+ description Configured from Cisco DNA-Center
+ mac-address 0000.0c9f.fa3f
+ ip address 10.123.0.1 255.255.0.0
+ ip helper-address global 10.10.0.250
+ no ip redirects
+ ip route-cache same-interface
+ no lisp mobility liveness test
+ lisp mobility AccessPoints-IPV4
+!
+interface Vlan2047
+ description Configured from Cisco DNA-Center
+ mac-address 0000.0c9f.fa61
+ ip address 10.126.2.1 255.255.255.0
+ ip helper-address global 10.10.0.250
+ no ip redirects
+ ip route-cache same-interface
+ no lisp mobility liveness test
+ lisp mobility ExtendedNode-IPV4
+!
+router lisp
+ locator-table default
+ locator-set rloc_976453c9-d7be-4943-8929-d80e101b539d
+  IPv4-interface Loopback0 priority 10 weight 10
+  exit-locator-set
+ !
+ locator default-set rloc_976453c9-d7be-4943-8929-d80e101b539d
+ service ipv4
+  encapsulation vxlan
+  itr map-resolver 10.124.0.1
+  itr map-resolver 10.124.0.2
+  etr map-server 10.124.0.1 key 7 01455150030D045F744D4B5C1C5143415E
+  etr map-server 10.124.0.1 proxy-reply
+  etr map-server 10.124.0.2 key 7 040D5C5257274E1E5C180042175F58577F
+  etr map-server 10.124.0.2 proxy-reply
+  etr
+  sgt
+  no map-cache away-eids send-map-request
+  use-petr 10.124.0.1
+  use-petr 10.124.0.2
+  proxy-itr 10.124.1.1
+  exit-service-ipv4
+ !
+ service ethernet
+  itr map-resolver 10.124.0.1
+  itr map-resolver 10.124.0.2
+  itr
+  etr map-server 10.124.0.1 key 7 08771B1A511F0747470A09512F7F707B66
+  etr map-server 10.124.0.1 proxy-reply
+  etr map-server 10.124.0.2 key 7 0250530F53000D71194F0C4C0043465859
+  etr map-server 10.124.0.2 proxy-reply
+  etr
+  exit-service-ethernet
+ !
+ instance-id 4097
+  remote-rloc-probe on-route-change
+  dynamic-eid AccessPoints-IPV4
+   database-mapping 10.123.0.0/16 locator-set rloc_976453c9-d7be-4943-8929-d80e101b539d
+   exit-dynamic-eid
+  !
+  dynamic-eid ExtendedNode-IPV4
+   database-mapping 10.126.2.0/24 locator-set rloc_976453c9-d7be-4943-8929-d80e101b539d
+   exit-dynamic-eid
+  !
+  service ipv4
+   eid-table default
+   exit-service-ipv4
+  !
+  exit-instance-id
+ !
+ instance-id 4099
+  remote-rloc-probe on-route-change
+  dynamic-eid Campus-IPV4
+   database-mapping 10.100.0.0/16 locator-set rloc_976453c9-d7be-4943-8929-d80e101b539d
+   exit-dynamic-eid
+  !
+  service ipv4
+   eid-table vrf Campus
+   map-cache 0.0.0.0/0 map-request
+   exit-service-ipv4
+  !
+  exit-instance-id
+ !
+ instance-id 4100
+  remote-rloc-probe on-route-change
+  dynamic-eid Guest-IPV4
+   database-mapping 10.99.0.0/16 locator-set rloc_976453c9-d7be-4943-8929-d80e101b539d
+   exit-dynamic-eid
+  !
+  service ipv4
+   eid-table vrf Guest
+   map-cache 0.0.0.0/0 map-request
+   exit-service-ipv4
+  !
+  exit-instance-id
+ !
+ instance-id 8189
+  remote-rloc-probe on-route-change
+  service ethernet
+   eid-table vlan 2045
+   database-mapping mac locator-set rloc_976453c9-d7be-4943-8929-d80e101b539d
+   exit-service-ethernet
+  !
+  exit-instance-id
+ !
+ instance-id 8190
+  remote-rloc-probe on-route-change
+  service ethernet
+   eid-table vlan 2047
+   database-mapping mac locator-set rloc_976453c9-d7be-4943-8929-d80e101b539d
+   exit-service-ethernet
+  !
+  exit-instance-id
+ !
+ instance-id 8192
+  remote-rloc-probe on-route-change
+  service ethernet
+   eid-table vlan 1021
+   database-mapping mac locator-set rloc_976453c9-d7be-4943-8929-d80e101b539d
+   exit-service-ethernet
+  !
+  exit-instance-id
+ !
+ instance-id 8193
+  remote-rloc-probe on-route-change
+  service ethernet
+   eid-table vlan 1022
+   database-mapping mac locator-set rloc_976453c9-d7be-4943-8929-d80e101b539d
+   exit-service-ethernet
+  !
+  exit-instance-id
+ !
+ ipv4 locator reachability minimum-mask-length 32 proxy-etr-only
+ ipv4 source-locator Loopback0
+ exit-router-lisp
+!
+router isis
+ net 49.0000.0111.0111.0010.00
+ is-type level-2-only
+ router-id Loopback0
+ domain-password xxxxxx
+ metric-style transition
+ log-adjacency-changes
+ bfd all-interfaces
+!
 ip forward-protocol nd
 ip http server
 ip http authentication local
 ip http secure-server
 ip http max-connections 16
-ip http client source-interface Vlan2047
-ip tftp source-interface Vlan2047
-ip ssh source-interface Vlan2047
+ip http client source-interface Loopback0
+ip tftp source-interface Loopback0
+ip tftp blocksize 1468
+ip route 10.10.0.0 255.255.255.0 10.125.0.1 240
+ip route 10.10.0.0 255.255.255.0 10.125.0.25 240
+ip route 10.127.100.0 255.255.255.0 10.125.0.1 240
+ip route 10.127.100.0 255.255.255.0 10.125.0.25 240
+ip ssh source-interface Loopback0
 ip ssh version 2
-ip scp server enable
 !
 !
 ip access-list extended ACL_WEBAUTH_REDIRECT
- 130 deny   ip any host 10.10.0.200
+ 120 deny   ip any host 10.10.0.200
  500 permit tcp any any eq www
  600 permit tcp any any eq 443
  700 permit tcp any any eq 8443
@@ -2110,14 +1988,18 @@ ip access-list extended IPV4_PRE_AUTH_ACL
  30 deny   ip any any
 !
 !
-ip radius source-interface Vlan2047 
-logging source-interface Vlan2047
+ip radius source-interface Loopback0 
+ip sla 1
+ icmp-echo 10.10.0.200 source-interface Loopback0
+  frequency 30
+ip sla schedule 1 life forever start-time now
+logging source-interface Loopback0
 logging host 10.10.0.20
 !
 !
 snmp-server community xxxxxxxx RO
 snmp-server community xxxxxxxx RW
-snmp-server trap-source Vlan2047
+snmp-server trap-source Loopback0
 snmp-server enable traps snmp authentication linkdown linkup coldstart warmstart
 snmp-server enable traps flowmon
 snmp-server enable traps entity-perf throughput-notif
@@ -2254,16 +2136,28 @@ cts role-based sgt-map 10.10.0.251 sgt 26
 cts role-based sgt-map 10.10.0.252 sgt 14
 cts role-based enforcement
 cts role-based enforcement vlan-list 1021-1022,2045,2047
+alias exec show-pov-version event manager run show-pov-version
+alias exec fix-ssh event manager run fix-ssh
+alias exec prep-rtr event manager run prep-rtr
+alias exec enable-netconf event manager run enable-netconf
+alias exec enable-guestshell event manager run enable-guestshell
+alias exec prep-rtr-sec event manager run prep-rtr-sec
 !
 line con 0
- exec-timeout 0 0
+ exec-timeout 60 0
+ privilege level 15
+ logging synchronous
  stopbits 1
 line vty 0 4
- transport preferred none
- transport input ssh
+ exec-timeout 60 0
+ privilege level 15
+ logging synchronous
+ transport input telnet ssh
 line vty 5 15
- transport preferred none
- transport input ssh
+ exec-timeout 60 0
+ privilege level 15
+ logging synchronous
+ transport input telnet ssh
 line vty 16 31
  transport input ssh
 !
@@ -2274,23 +2168,124 @@ call-home
  profile "CiscoTAC-1"
   active
   destination transport-method http
-ntp source Vlan2047
+ntp source Loopback0
 ntp server 10.10.0.250
 !
 !
 !
 !
 !
+event manager applet ssh-and-netconf
+ event syslog pattern "ip sla 1 reachability Down -> Up"
+ action a1010 syslog msg "Start: 'ssh-and-netconf' EEM applet."
+ action b1010 cli command "enable"
+ action b1020 cli command "fix-ssh"
+ action c1010 syslog msg "Starting nested EEM script: 'enable-netconf'."
+ action c1020 cli command "enable-netconf"
+ action z1010 syslog msg "End: 'ssh-and-netconf' EEM applet."
+event manager applet enable-netconf
+ event none sync yes
+ action a1010 syslog msg "Start: 'enable-netconf' EEM applet."
+ action b1010 cli command "enable"
+ action b1020 cli command "conf t"
+ action b1030 cli command "netconf-yang"
+ action b1040 cli command "yes"
+ action b1050 cli command "end"
+ action z1010 syslog msg "End: 'enable-netconf' EEM applet."
+event manager applet fix-ssh
+ event none sync yes
+ action a1010 syslog msg "Start: 'fix-ssh' EEM applet."
+ action b1010 cli command "enable"
+ action b1020 cli command "conf t"
+ action b1030 cli command "crypto key gen rsa mod 1024"
+ action b1040 cli command "end"
+ action z1010 syslog msg "Stop: 'fix-ssh' EEM applet."
+event manager applet enable-guestshell
+ event none sync yes maxrun 240
+ action a1010 syslog msg "Start: 'enable-guestshell' EEM applet.  This will take about 60 seconds to complete."
+ action b1010 cli command "enable"
+ action b1020 cli command "conf t"
+ action b1030 cli command "iox"
+ action b1040 syslog msg "Enabled IOX.  Waiting 45 seconds for it to start."
+ action b1050 wait 45
+ action b1060 cli command "end"
+ action c1010 cli command "guestshell enable"
+ action z1010 syslog msg "IOX and GuestShell enabled."
+ action z1020 syslog msg "Stop: 'enable-guestshell' EEM applet."
+event manager applet prep-rtr
+ event none sync yes maxrun 240
+ action a1010 syslog msg "Start: 'prep-rtr'  EEM applet."
+ action a1020 puts "Preparing device to start the lab.  Note: This script will reboot the device."
+ action b1010 cli command "enable"
+ action b1020 puts "Erasing startup-config."
+ action b1030 cli command "wr er" pattern "confirm"
+ action b1040 cli command "y"
+ action b1050 puts "Clearing crypto keys."
+ action b1060 cli command "config t"
+ action b1070 cli command "crypto key zeroize" pattern "yes/no"
+ action b1080 cli command "y"
+ action b1090 cli command "no crypto pki cert pool" pattern "yes/no"
+ action b1100 cli command "y"
+ action b1110 cli command "exit"
+ action b1120 puts "Deleting vlan.dat file."
+ action b1130 cli command "delete /force vlan.dat"
+ action b1140 puts "Copying flash:pov-base-config to startup-config."
+ action b1150 cli command "copy pov-base-config start" pattern "startup-config"
+ action b1160 cli command "startup-config"
+ action c1010 puts "Starting nested-EEM script 'enable-guestshell'.  Expect a 75 second delay before this script continues."
+ action c1020 cli command "enable-guestshell"
+ action c1030 wait 75
+ action z1010 puts "Device is prepared for the beginning of the lab.  Rebooting."
+ action z1020 syslog msg "Stop: 'prep-rtr' EEM applet."
+ action z1030 reload
+event manager applet prep-rtr-sec
+ event none sync yes maxrun 240
+ action a1010 syslog msg "Start: 'prep-rtr-sec'  EEM applet."
+ action a1020 puts "Preparing device to start the lab.  Note: This script will reboot the device."
+ action b1010 cli command "enable"
+ action b1020 puts "Erasing startup-config."
+ action b1030 cli command "wr er" pattern "confirm"
+ action b1040 cli command "y"
+ action b1050 puts "Clearing crypto keys."
+ action b1060 cli command "config t"
+ action b1070 cli command "crypto key zeroize" pattern "yes/no"
+ action b1080 cli command "y"
+ action b1090 cli command "no crypto pki cert pool" pattern "yes/no"
+ action b1100 cli command "y"
+ action b1110 cli command "exit"
+ action b1120 puts "Deleting vlan.dat file."
+ action b1130 cli command "delete /force vlan.dat"
+ action b1140 puts "Copying flash:pov-base-config-sec to startup-config."
+ action b1150 cli command "copy pov-base-config-sec start" pattern "startup-config"
+ action b1160 cli command "startup-config"
+ action c1010 puts "Starting nested-EEM script 'enable-guestshell'.  Expect a 75 second delay before this sc"
+ action c1020 cli command "enable-guestshell"
+ action c1030 wait 75
+ action z1010 puts "Device is prepared for the beginning of the lab.  Rebooting."
+ action z1020 syslog msg "Stop: 'prep-rtr' EEM applet."
+ action z1030 reload
+event manager applet show-pov-version
+ event none sync yes
+ action a1010 puts "SDA PoV config version v2.6"
+event manager applet DAILY-RESET
+ event timer cron name DAILY-RESET cron-entry "30 08 * * 1-5"
+ action 1.0 syslog msg "RUN: 'DAILY-RESET'  EEM applet."
+ action 2.0 puts "DAILY-RESET"
+ action 2.1 cli command "enable"
+ action 2.2 cli command "config t"
+ action 2.3 cli command "int ra gi 1/0/23-24"
+ action 2.4 puts "SHUTDOWN"
+ action 2.5 cli command "shut"
+ action 2.6 puts "NO SHUTDOWN"
+ action 2.7 cli command "no shut"
+ action 2.8 cli command "exit"
 !
-!
-pnp profile pnp-zero-touch
- transport https ipv4 10.10.0.20 port 443
 pnp startup-vlan 2047
 telemetry ietf subscription 500
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/poe_port_detail
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2298,7 +2293,7 @@ telemetry ietf subscription 501
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/poe_module
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2306,7 +2301,7 @@ telemetry ietf subscription 502
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/poe_stack
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2314,7 +2309,7 @@ telemetry ietf subscription 503
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/poe_switch
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2322,7 +2317,7 @@ telemetry ietf subscription 504
  encoding encode-tdl
  filter nested-uri /services;serviceName=ios_oper/platform_component;cname=0?platform_properties
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy periodic 30000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2330,7 +2325,7 @@ telemetry ietf subscription 550
  encoding encode-tdl
  filter tdl-uri /services;serviceName=smevent/sessionevent
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2338,7 +2333,7 @@ telemetry ietf subscription 551
  encoding encode-tdl
  filter tdl-uri /services;serviceName=sessmgr_oper/session_context_data
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2346,7 +2341,7 @@ telemetry ietf subscription 552
  encoding encode-tdl
  filter tdl-uri /services;serviceName=iosevent/sisf_mac_oper_state
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2354,7 +2349,7 @@ telemetry ietf subscription 553
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/sisf_db_wired_mac
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2362,7 +2357,7 @@ telemetry ietf subscription 554
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/cdp_neighbor_detail
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2370,7 +2365,7 @@ telemetry ietf subscription 555
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/cdp_neighbor_detail
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2378,7 +2373,7 @@ telemetry ietf subscription 600
  encoding encode-tdl
  filter tdl-uri /services;serviceName=sessmgr_oper/tbl_aaa_servers_stat
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2386,7 +2381,7 @@ telemetry ietf subscription 601
  encoding encode-tdl
  filter tdl-uri /services;serviceName=sessmgr_oper/tbl_aaa_servers_stat
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2394,7 +2389,7 @@ telemetry ietf subscription 602
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_emul_oper/lisp_routers;top_id=0/sessions
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2402,7 +2397,7 @@ telemetry ietf subscription 603
  encoding encode-tdl
  filter tdl-uri /services;serviceName=iosevent/lisp_tcp_session_state
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2410,7 +2405,7 @@ telemetry ietf subscription 604
  encoding encode-tdl
  filter nested-uri /services;serviceName=ios_emul_oper/lisp_routers;top_id=0/instances;iid=0/af;iaftype=LISP_TDL_IAF_IPV4/lisp_publisher
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2418,7 +2413,7 @@ telemetry ietf subscription 605
  encoding encode-tdl
  filter tdl-uri /services;serviceName=iosevent/lisp_pubsub_session_state
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2426,7 +2421,7 @@ telemetry ietf subscription 750
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_emul_oper/environment_sensor
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy periodic 30000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2434,7 +2429,7 @@ telemetry ietf subscription 751
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/platform_component
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy periodic 30000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2442,7 +2437,7 @@ telemetry ietf subscription 1020
  encoding encode-tdl
  filter tdl-uri /services;serviceName=iosevent/install_status
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2450,7 +2445,7 @@ telemetry ietf subscription 8882
  encoding encode-tdl
  filter tdl-transform trustSecCounterDelta
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.124.1.1
  stream native
  update-policy periodic 90000
  receiver name DNAC_ASSURANCE_RECEIVER

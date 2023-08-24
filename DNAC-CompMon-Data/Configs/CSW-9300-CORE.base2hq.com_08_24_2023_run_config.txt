@@ -1,19 +1,21 @@
 
 Building configuration...
 
-Current configuration : 85277 bytes
+Current configuration : 82630 bytes
 !
-! Last configuration change at 13:47:11 UTC Wed Jul 26 2023
+! Last configuration change at 14:28:11 EDT Wed Aug 16 2023 by admin
 !
 version 17.6
-service timestamps debug datetime msec
-service timestamps log datetime msec
+service tcp-keepalives-in
+service tcp-keepalives-out
+service timestamps debug datetime msec localtime show-timezone
+service timestamps log datetime msec show-timezone year
 service password-encryption
 service sequence-numbers
 service call-home
-platform punt-keepalive disable-kernel-core
+no platform punt-keepalive disable-kernel-core
 !
-hostname SN-FJB2411D011
+hostname CSW-9300-CORE
 !
 !
 vrf definition Mgmt-vrf
@@ -24,23 +26,37 @@ vrf definition Mgmt-vrf
  address-family ipv6
  exit-address-family
 !
+logging buffered 16384 informational
+no logging console
 enable secret 9 xxxxxxxx
 !
 aaa new-model
 !
 !
+aaa group server radius CON-VTY
+ server-private 10.10.0.250 key 7 094F471A1A0A464058
+ ip radius source-interface Loopback0
+ deadtime 6
+!
 aaa group server radius dnac-client-radius-group
  server name dnac-radius_10.10.0.200
- ip radius source-interface Vlan2047
+ ip radius source-interface Loopback0
 !
 aaa authentication login default local
+aaa authentication login CON-VTY group CON-VTY local-case
+aaa authentication login CON-LAB local-case
 aaa authentication login dnac-cts-list group dnac-client-radius-group local
 aaa authentication dot1x default group dnac-client-radius-group
+aaa authorization console
 aaa authorization exec default local 
+aaa authorization exec CON-VTY group CON-VTY local 
+aaa authorization exec CON-LAB local 
 aaa authorization network default group dnac-client-radius-group 
 aaa authorization network dnac-cts-list group dnac-client-radius-group 
 aaa accounting update newinfo periodic 2880
 aaa accounting identity default start-stop group dnac-client-radius-group
+aaa accounting exec CON-VTY start-stop group CON-VTY
+aaa accounting network default start-stop group radius
 !
 !
 !
@@ -50,126 +66,110 @@ aaa server radius dynamic-author
  client 10.10.0.200 server-key 7 xxxxxxxx
 !
 aaa session-id common
-boot system switch all flash:packages.conf
+boot system switch all flash:cat9k_iosxe.17.06.05.SPA.bin
+clock timezone EST -5 0
+clock summer-time EDT recurring
 switch 1 provision c9300-48u
-software auto-upgrade enable
 !
 !
 !
 !
+ip routing
 !
+ip vrf firewalldmz
+ description VLAN firewalldmz
+ rd 100:666
+!
+ip vrf guest
+ description VLAN guest
+ rd 100:90
 !
 !
 ip nbar http-services
 !
-ip nbar custom socio http url "app.socio.events" id 6676 
 ip nbar custom VUDU http url "https://www.vudu.com" id 55850 
+ip nbar custom socio http url "app.socio.events" id 6676 
 !
-ip nbar attribute-map BR0
- attribute business-relevance business-relevant
 ip nbar attribute-map TC3_BR0
  attribute traffic-class multimedia-streaming
  attribute business-relevance business-relevant
+ip nbar attribute-map BR0
+ attribute business-relevance business-relevant
 !
 !
-ip nbar attribute-set socio TC3_BR0
 ip nbar attribute-set VUDU TC3_BR0
+ip nbar attribute-set socio TC3_BR0
 !
+ip multicast-routing 
 ip name-server 10.10.0.250
-ip domain lookup source-interface Vlan2047
-ip domain name sda.base2hq.com
+ip domain lookup source-interface Loopback0
+ip domain name base2hq.com
 !
 !
 !
-ip dhcp snooping glean
-ip dhcp snooping vlan 1021-1022,2045,2047
-no ip dhcp snooping information option
-ip dhcp snooping
  login xxxxxx
-ipv6 mld snooping
+ login xxxxxx
+!
+location civic-location identifier 1
+ country US
+ postal-code 46037
+ state Indiana
+ street-group "Whitney Way"
+ number 10054
 !
 !
 !
 !
 !
 !
-device-sensor filter-list cdp list iseCDP
- tlv name device-name
- tlv name capabilities-type
- tlv name version-type
- tlv name platform-type
 !
-device-sensor filter-list dhcp list iseDHCP
- option name host-name
- option name parameter-request-list
- option name class-identifier
- option name v-i-vendor-class
-!
-device-sensor filter-list lldp list iseLLDP
- tlv name system-name
- tlv name system-description
- tlv name system-capabilities
-device-sensor filter-spec dhcp include list iseDHCP
-device-sensor filter-spec lldp include list iseLLDP
-device-sensor filter-spec cdp include list iseCDP
-device-sensor notify all-changes
-!
-!
+vtp domain base2hq.com
 vtp mode transparent
+udld enable
+
 avc sd-service
  segment AppRecognition
  controller
   address 10.10.0.20 
   destination-ports sensor-exporter 21730
   dscp 16
-  source-interface Vlan2047
+  source-interface Loopback0
   transport application-updates https url-prefix sdavc
  !
 !
 !
-parameter-map type subscriber attribute-to-service BUILTIN_DEVICE_TO_TEMPLATE
- 1 map device-type regex "IE-400*"
-  10 interface-template SWITCH_INTERFACE_TEMPLATE
- 2 map device-type regex "Cisco-DMP"
-  10 interface-template SWITCH_INTERFACE_TEMPLATE
- 3 map device-type regex "IE-401*"
-  10 interface-template SWITCH_INTERFACE_TEMPLATE
- 4 map device-type regex "Cisco-Switch"
-  10 interface-template SWITCH_INTERFACE_TEMPLATE
- 5 map device-type regex "CDB*"
-  10 interface-template SWITCH_INTERFACE_TEMPLATE
- 6 map device-type regex "WS-C3560CX*"
-  10 interface-template SWITCH_INTERFACE_TEMPLATE
- 7 map device-type regex "IE-330*"
-  10 interface-template SWITCH_INTERFACE_TEMPLATE
- 8 map device-type regex "IE-3400*"
-  10 interface-template SWITCH_INTERFACE_TEMPLATE
- 9 map device-type regex "IE-320*"
-  10 interface-template SWITCH_INTERFACE_TEMPLATE
- 11 map device-type regex "IE-500*"
-  10 interface-template SWITCH_INTERFACE_TEMPLATE
- 12 map device-type regex "CMICR*"
-  10 interface-template SWITCH_INTERFACE_TEMPLATE
- 60 map device-type regex "Cisco-AIR-AP"
-  20 interface-template AP_INTERFACE_TEMPLATE
- 70 map device-type regex "Cisco-AIR-LAP"
-  20 interface-template LAP_INTERFACE_TEMPLATE
- 110 map device-type regex "Cisco-CAT-LAP"
-  10 interface-template LAP_INTERFACE_TEMPLATE
+parameter-map type webauth global
+ watch-list dynamic-expiry-timeout 0
 !
-access-session attributes filter-list list Def_Acct_List
- cdp
- lldp
- dhcp
- http
-access-session accounting attributes filter-spec include list Def_Acct_List
-access-session interface-template sticky timer 30
-access-session acl default passthrough
 device-tracking tracking
+!
+device-tracking policy IPDT_MAX_10
+ limit address-count 10
+ no protocol udp
+ tracking enable
 !
 device-tracking policy IPDT_POLICY
  no protocol udp
  tracking enable
+!
+!
+flow record dnacrecord
+ match ipv4 version
+ match ipv4 protocol
+ match application name
+ match connection client ipv4 address
+ match connection server ipv4 address
+ match connection server transport port
+ match flow observation point
+ collect timestamp absolute first
+ collect timestamp absolute last
+ collect flow direction
+ collect connection initiator
+ collect connection client counter packets long
+ collect connection client counter bytes network long
+ collect connection server counter packets long
+ collect connection server counter bytes network long
+ collect connection new-connections
 !
 !
 flow exporter 10.10.0.20
@@ -177,26 +177,32 @@ flow exporter 10.10.0.20
  transport udp 6007
 !
 !
+flow exporter dnacexporter
+ destination 10.10.0.20
+ source Tunnel1
+ transport udp 6007
+ export-protocol ipfix
+ option interface-table timeout 10
+ option vrf-table timeout 10
+ option sampler-table
+ option application-table timeout 10
+ option application-attributes timeout 10
+!
+!
+flow monitor dnacmonitor
+ exporter dnacexporter
+ cache timeout inactive 10
+ cache timeout active 60
+ record dnacrecord
+!
+!
 flow monitor eta-mon
 !
 !
 !
-table-map policed-dscp
- map from  0 to 8
- map from  10 to 8
- map from  18 to 8
- map from  24 to 8
- map from  46 to 8
- default copy
-table-map AutoConf-4.0-Trust-Cos-Table
- default copy
-table-map AutoConf-4.0-Trust-Dscp-Table
- default copy
-!
-!
-crytpo pki xxxxxxx
- enrollment pkcs12
- revocation-check crl
+key xxxxxxxx
+ key xxxxxxxx
+  key-string xxxxxxxx
 !
 crytpo pki xxxxxxx
  enrollment selfsigned
@@ -205,7 +211,7 @@ crytpo pki xxxxxxx
  rsakeypair TP-self-signed- xxxxxxxx
 !
 crytpo pki xxxxxxx
- enrollment url flash://PnP-cert_10_38_20_UTC_Thu_Sep_22_2022
+ enrollment pkcs12
  revocation-check none
 !
 crytpo pki xxxxxxx
@@ -213,48 +219,19 @@ crytpo pki xxxxxxx
  enrollment terminal
  usage ssl-client
  revocation-check crl none
- source interface Vlan2047
+ source interface Loopback0
 !
 crytpo pki xxxxxxx
  enrollment url http://10.10.0.20:80/ejbca/publicweb/apply/scep/sdnscep
- fqdn SN-FJB2411D011.sda.base2hq.com
+ fqdn CSW-9300-CORE.base2hq.com
  subject-name xxxxxxxx
- subject-alt-name SN-FJB2411D011.sda.base2hq.com
+ subject-alt-name CSW-9300-CORE.base2hq.com
  revocation-check crl
- source interface Vlan2047
+ source interface Loopback0
  rsakeypair xxxxxxxx
  auto-enroll 80 regenerate
 !
 !
-crypto pki certificate chain xxxxxxx
- certificate ca xxxxxxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-quit
 crypto pki certificate chain xxxxxxx
  certificate self-signed xxxxxxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
@@ -312,8 +289,6 @@ crypto pki certificate chain xxxxxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
-  xxxx  xxxxx  xxxx  xxxx  xxxx
 quit
 crypto pki certificate chain xxxxxxx
  certificate ca xxxxxxxx
@@ -406,9 +381,13 @@ quit
   xxxx  xxxxx  xxxx  xxxx  xxxx
   xxxx  xxxxx  xxxx  xxxx  xxxx
 quit
+!
+crypto pki certificate xxxxxxxx
+ cabundle nvram:ios_core.p7b
 !
 cts authorization list dnac-cts-list
 !
+port-channel load-balance src-dst-ip
 service-template DEFAULT_LINKSEC_POLICY_MUST_SECURE
  linksec policy must-secure
 service-template DEFAULT_LINKSEC_POLICY_SHOULD_SECURE
@@ -416,30 +395,21 @@ service-template DEFAULT_LINKSEC_POLICY_SHOULD_SECURE
 service-template DEFAULT_CRITICAL_VOICE_TEMPLATE
  voice vlan
 service-template DEFAULT_CRITICAL_DATA_TEMPLATE
-service-template webauth-global-inactive
- inactivity-timer 3600 
-service-template DefaultCriticalAuthVlan_SRV_TEMPLATE
-service-template DefaultCriticalVoice_SRV_TEMPLATE
- voice vlan
-service-template DefaultCriticalAccess_SRV_TEMPLATE
- access-group IPV4_CRITICAL_AUTH_ACL
- access-group IPV6_CRITICAL_AUTH_ACL
 dot1x system-auth-control
-dot1x critical eapol
 license boot level network-advantage addon dna-advantage
+license smart reservation
 license smart transport off
-device classifier
 !
 !
 diagnostic bootup level minimal
 !
 spanning-tree mode rapid-pvst
+spanning-tree portfast default
+spanning-tree portfast bpduguard default
 spanning-tree extend system-id
-archive
- log config
-  logging enable
-  logging size 500
-memory free low-watermark processor 131709
+spanning-tree vlan 1-4094 priority 0
+memory free low-watermark processor 134432
+no policy-manager policy enable
 !
 errdisable recovery cause udld
 errdisable recovery cause bpduguard
@@ -463,12 +433,14 @@ errdisable recovery cause link-monitor-failure
 errdisable recovery cause oam-remote-failure
 errdisable recovery cause loopback
 errdisable recovery cause psp
-errdisable recovery cause mrp-miscabling
-errdisable recovery cause loopdetect
+errdisable recovery interval 30
 
 et-analytics
  ip flow-export destination 10.10.0.212 2055
-username netadmin privilege 15 secret xxxxxx 
+username admin privilege 15 secret xxxxxx 
+username restadmin privilege 15 secret xxxxxx 
+username demouser privilege 3 view ALLOWEDCMDS secret 9 $14$4d4X$Ez4lxG8ve6nchE$Jj0ZuG3TAVo/DNpnHpDtjKX24TVQvOZ7RKcawj8WkFs
+username webadmin privilege 15 secret xxxxxx 
 !
 redundancy
  mode sso
@@ -482,20 +454,32 @@ crypto engine compliance shield disable
 transceiver type all
  monitoring
 !
-vlan 1021
- name Campus
+vlan 10
+ name datacenter
 !
-vlan 1022
- name Guest
+vlan 20
+ name wirelessap
 !
-vlan 2045
- name AccessPoints
+vlan 30
+ name wireddata
 !
-vlan 2046
- name VOICE_VLAN
+vlan 40
+ name wirelessdata
 !
-vlan 2047
- name ExtendedNode
+vlan 90
+ name guest
+!
+vlan 666
+ name firewalldmz
+!
+vlan 777
+ name vmotion
+!
+vlan 888
+ name dnac-intracluster
+!
+vlan 889
+ name dnaclab-intracluster
 lldp run
 !
 class-map type control subscriber match-all AAA_SVR_DOWN_AUTHD_HOST
@@ -510,40 +494,21 @@ class-map type control subscriber match-all AUTHC_SUCCESS-AUTHZ_FAIL
  match authorization-status unauthorized
  match result-type success
 !
-class-map type control subscriber match-all DOT1X
- match method dot1x
-!
 class-map type control subscriber match-all DOT1X_FAILED
  match method dot1x
  match result-type method dot1x authoritative
-!
-class-map type control subscriber match-all DOT1X_MEDIUM_PRIO
- match authorizing-method-priority gt 20
 !
 class-map type control subscriber match-all DOT1X_NO_RESP
  match method dot1x
  match result-type method dot1x agent-not-found
 !
-class-map type control subscriber match-all DOT1X_TIMEOUT
- match method dot1x
- match result-type method dot1x method-timeout
-!
-class-map type control subscriber match-any IN_CRITICAL_AUTH
- match activated-service-template DefaultCriticalVoice_SRV_TEMPLATE
-!
 class-map type control subscriber match-any IN_CRITICAL_AUTH_CLOSED_MODE
  match activated-service-template DefaultCriticalAuthVlan_SRV_TEMPLATE
  match activated-service-template DefaultCriticalVoice_SRV_TEMPLATE
 !
-class-map type control subscriber match-all MAB
- match method mab
-!
 class-map type control subscriber match-all MAB_FAILED
  match method mab
  match result-type method mab authoritative
-!
-class-map type control subscriber match-none NOT_IN_CRITICAL_AUTH
- match activated-service-template DefaultCriticalVoice_SRV_TEMPLATE
 !
 class-map type control subscriber match-none NOT_IN_CRITICAL_AUTH_CLOSED_MODE
  match activated-service-template DefaultCriticalAuthVlan_SRV_TEMPLATE
@@ -556,13 +521,6 @@ class-map match-any system-cpp-police-topology-control
   description Topology control
 class-map match-any system-cpp-police-sw-forward
   description Sw forwarding, L2 LVX data packets, LOGGING, Transit Traffic
-class-map match-any AutoConf-4.0-Transaction-Class
- match access-group name AutoConf-4.0-Acl-Transactional-Data
-class-map match-any AutoConf-4.0-Output-Trans-Data-Queue
- match dscp af21  af22  af23 
- match cos  2 
-class-map match-any AutoConf-4.0-Default-Class
- match access-group name AutoConf-4.0-Acl-Default
 class-map match-any DNA-MARKING_IN#REALTIME_CUSTOM
 class-map match-all DNA-MARKING_IN#MM_STREAM
  match protocol attribute traffic-class multimedia-streaming
@@ -578,16 +536,11 @@ class-map match-all DNA-MARKING_IN#CONTROL
 class-map match-any DNA-MARKING_IN#TRANS_DATA_CUSTOM
 class-map match-any system-cpp-police-sys-data
   description Openflow, Exception, EGR Exception, NFL Sampled Data, RPF Failed
-class-map match-any AutoConf-4.0-Output-Scavenger-Queue
- match dscp cs1 
 class-map match-all DNA-MARKING_IN#MM_CONF
  match protocol attribute traffic-class multimedia-conferencing
  match protocol attribute business-relevance business-relevant
 class-map match-all DNA-MARKING_IN#SCAVENGER
  match protocol attribute business-relevance business-irrelevant
-class-map match-any AutoConf-4.0-Output-Control-Mgmt-Queue
- match dscp cs2  cs3  cs6  cs7 
- match cos  3 
 class-map match-all DNA-MARKING_IN#SIGNALING
  match protocol attribute traffic-class signaling
  match protocol attribute business-relevance business-relevant
@@ -597,10 +550,6 @@ class-map match-all DNA-MARKING_IN#BROADCAST
 class-map match-all DNA-MARKING_IN#BULK_DATA
  match protocol attribute traffic-class bulk-data
  match protocol attribute business-relevance business-relevant
-class-map match-any AutoConf-4.0-Scavanger-Class
- match access-group name AutoConf-4.0-Acl-Scavanger
-class-map match-any AutoConf-4.0-Signaling-Class
- match access-group name AutoConf-4.0-Acl-Signaling
 class-map match-any system-cpp-police-punt-webauth
   description Punt Webauth
 class-map match-all DNA-MARKING_IN#VOICE
@@ -619,8 +568,6 @@ class-map match-any system-cpp-police-multicast-end-station
   description MCAST END STATION
 class-map match-any system-cpp-police-high-rate-app
   description High Rate Applications 
-class-map match-any AutoConf-4.0-Voip-Video-CiscoPhone-Class
- match cos  4 
 class-map match-any system-cpp-police-multicast
   description MCAST Data
 class-map match-any DNA-EZQOS_2P6Q3T_9K#CONTROL-PLANE
@@ -637,9 +584,6 @@ class-map match-any system-cpp-police-l2-control
 class-map match-any DNA-MARKING_IN#CONTROL_CUSTOM
 class-map match-any system-cpp-police-dot1x-auth
   description DOT1X Auth
-class-map match-any AutoConf-4.0-Output-Multimedia-ConfQueue
- match dscp af41  af42  af43 
- match cos  4 
 class-map match-any system-cpp-police-data
   description ICMP redirect, ICMP_GEN and BROADCAST
 class-map match-any DNA-MARKING_IN#MM_STREAM_CUSTOM
@@ -657,16 +601,9 @@ class-map match-any system-cpp-police-stackwise-virt-control
   description Stackwise Virtual OOB
 class-map match-any DNA-MARKING_IN#VOICE_CUSTOM
 class-map match-any DNA-MARKING_IN#SCAVENGER_CUSTOM
-class-map match-any AutoConf-4.0-Output-Multimedia-StrmQueue
- match dscp af31  af32  af33 
 class-map match-any DNA-MARKING_IN#SIGNALING_CUSTOM
-class-map match-any AutoConf-4.0-Voip-Data-CiscoPhone-Class
- match cos  5 
 class-map match-any DNA-MARKING_IN#BROADCAST_CUSTOM
 class-map match-any DNA-MARKING_IN#BULK_DATA_CUSTOM
-class-map match-any AutoConf-4.0-Voip-SignalClass
- match dscp cs3 
- match cos  3 
 class-map match-any non-client-nrt-class
 class-map match-all DNA-MARKING_IN#TRANS_DATA
  match protocol attribute traffic-class transactional-data
@@ -676,15 +613,8 @@ class-map match-any system-cpp-police-routing-control
   description Routing control and Low Latency
 class-map match-any system-cpp-police-protocol-snooping
   description Protocol snooping
-class-map match-any AutoConf-4.0-Output-Bulk-Data-Queue
- match dscp af11  af12  af13 
- match cos  1 
-class-map match-any AutoConf-4.0-Multimedia-Conf-Class
- match access-group name AutoConf-4.0-Acl-MultiEnhanced-Conf
 class-map match-any system-cpp-police-dhcp-snooping
   description DHCP snooping
-class-map match-any AutoConf-4.0-Bulk-Data-Class
- match access-group name AutoConf-4.0-Acl-Bulk-Data
 class-map match-any system-cpp-police-ios-routing
   description L2 control, Topology control, Routing control, Low Latency
 class-map match-any DNA-MARKING_IN#TUNNELED-NBAR
@@ -695,23 +625,15 @@ class-map match-any DNA-EZQOS_2P6Q3T_9K#TRANSACTIONAL-DATA
  match dscp af22 
 class-map match-any system-cpp-police-system-critical
   description System Critical and Gold Pkt
-class-map match-any AutoConf-4.0-VoipSignal-CiscoPhone-Class
- match cos  3 
 class-map match-any system-cpp-police-ios-feature
   description ICMPGEN,BROADCAST,ICMP,L2LVXCntrl,ProtoSnoop,PuntWebauth,MCASTData,Transit,DOT1XAuth,Swfwd,LOGGING,L2LVXData,ForusTraffic,ForusARP,McastEndStn,Openflow,Exception,EGRExcption,NflSampled,RpfFailed
 class-map match-any DNA-EZQOS_2P6Q3T_9K#MULTIMEDIA-STREAMING
  match dscp af32 
  match dscp af33 
  match dscp af31 
-class-map match-any AutoConf-4.0-Output-Priority-Queue
- match dscp cs4  cs5  ef 
- match cos  5 
-class-map match-any AutoConf-4.0-Voip-Data-Class
- match dscp ef 
- match cos  5 
 !
 !
-policy-map type control subscriber PMAP_DefaultWiredDot1xClosedAuth_1X_MAB
+policy-map type control subscriber PMAP_WiredDot1xClosed_Template
  event session-started match-all
   10 class always do-until-failure
    10 authenticate using dot1x retries 2 retry-time 0 priority 10
@@ -720,8 +642,6 @@ policy-map type control subscriber PMAP_DefaultWiredDot1xClosedAuth_1X_MAB
    10 terminate dot1x
    20 authenticate using mab priority 20
   10 class AAA_SVR_DOWN_UNAUTHD_HOST do-until-failure
-   10 activate service-template DefaultCriticalAuthVlan_SRV_TEMPLATE
-   20 activate service-template DefaultCriticalVoice_SRV_TEMPLATE
    30 authorize
    40 pause reauthentication
   20 class AAA_SVR_DOWN_AUTHD_HOST do-until-failure
@@ -733,7 +653,7 @@ policy-map type control subscriber PMAP_DefaultWiredDot1xClosedAuth_1X_MAB
   40 class MAB_FAILED do-until-failure
    10 terminate mab
    20 authentication-restart 60
-  50 class DOT1X_TIMEOUT do-until-failure
+  50 class always do-until-failure
    10 terminate dot1x
    20 authenticate using mab priority 20
   60 class always do-until-failure
@@ -760,325 +680,6 @@ policy-map type control subscriber PMAP_DefaultWiredDot1xClosedAuth_1X_MAB
   10 class AUTHC_SUCCESS-AUTHZ_FAIL do-until-failure
    10 authentication-restart 60
 !
-policy-map type control subscriber PMAP_DefaultWiredDot1xClosedAuth_MAB_1X
- event session-started match-all
-  10 class always do-until-failure
-   10 authenticate using mab priority 20
- event authentication-failure match-first
-  5 class DOT1X_FAILED do-until-failure
-   10 terminate dot1x
-   20 authentication-restart 60
-  10 class AAA_SVR_DOWN_UNAUTHD_HOST do-until-failure
-   10 activate service-template DefaultCriticalAuthVlan_SRV_TEMPLATE
-   20 activate service-template DefaultCriticalVoice_SRV_TEMPLATE
-   30 authorize
-   40 pause reauthentication
-  20 class AAA_SVR_DOWN_AUTHD_HOST do-until-failure
-   10 pause reauthentication
-   20 authorize
-  30 class MAB_FAILED do-until-failure
-   10 terminate mab
-   20 authenticate using dot1x retries 2 retry-time 0 priority 10
-  40 class DOT1X_NO_RESP do-until-failure
-   10 terminate dot1x
-   20 authentication-restart 60
-  50 class DOT1X_TIMEOUT do-until-failure
-   10 terminate dot1x
-   20 authenticate using mab priority 20
-  60 class always do-until-failure
-   10 terminate mab
-   20 terminate dot1x
-   30 authentication-restart 60
- event aaa-available match-all
-  10 class IN_CRITICAL_AUTH_CLOSED_MODE do-until-failure
-   10 clear-session
-  20 class NOT_IN_CRITICAL_AUTH_CLOSED_MODE do-until-failure
-   10 resume reauthentication
- event agent-found match-all
-  10 class always do-until-failure
-   10 terminate mab
-   20 authenticate using dot1x retries 2 retry-time 0 priority 10
- event inactivity-timeout match-all
-  10 class always do-until-failure
-   10 clear-session
- event authentication-success match-all
- event violation match-all
-  10 class always do-until-failure
-   10 restrict
- event authorization-failure match-all
-  10 class AUTHC_SUCCESS-AUTHZ_FAIL do-until-failure
-   10 authentication-restart 60
-!
-policy-map type control subscriber PMAP_DefaultWiredDot1xLowImpactAuth_1X_MAB
- event session-started match-all
-  10 class always do-until-failure
-   10 authenticate using dot1x retries 2 retry-time 0 priority 10
- event authentication-failure match-first
-  5 class DOT1X_FAILED do-until-failure
-   10 terminate dot1x
-   20 authenticate using mab priority 20
-  10 class AAA_SVR_DOWN_UNAUTHD_HOST do-until-failure
-   10 activate service-template DefaultCriticalAuthVlan_SRV_TEMPLATE
-   20 activate service-template DefaultCriticalVoice_SRV_TEMPLATE
-   25 activate service-template DefaultCriticalAccess_SRV_TEMPLATE
-   30 authorize
-   40 pause reauthentication
-  20 class AAA_SVR_DOWN_AUTHD_HOST do-until-failure
-   10 pause reauthentication
-   20 authorize
-  30 class DOT1X_NO_RESP do-until-failure
-   10 terminate dot1x
-   20 authenticate using mab priority 20
-  40 class MAB_FAILED do-until-failure
-   10 terminate mab
-   20 authentication-restart 60
-  50 class DOT1X_TIMEOUT do-until-failure
-   10 terminate dot1x
-   20 authenticate using mab priority 20
-  60 class always do-until-failure
-   10 terminate dot1x
-   20 terminate mab
-   30 authentication-restart 60
- event aaa-available match-all
-  10 class IN_CRITICAL_AUTH do-until-failure
-   10 clear-session
-  20 class NOT_IN_CRITICAL_AUTH do-until-failure
-   10 resume reauthentication
- event agent-found match-all
-  10 class always do-until-failure
-   10 terminate mab
-   20 authenticate using dot1x retries 2 retry-time 0 priority 10
- event inactivity-timeout match-all
-  10 class always do-until-failure
-   10 clear-session
- event authentication-success match-all
- event violation match-all
-  10 class always do-until-failure
-   10 restrict
- event authorization-failure match-all
-  10 class AUTHC_SUCCESS-AUTHZ_FAIL do-until-failure
-   10 authentication-restart 60
-!
-policy-map type control subscriber PMAP_DefaultWiredDot1xLowImpactAuth_MAB_1X
- event session-started match-all
-  10 class always do-until-failure
-   10 authenticate using mab priority 20
- event authentication-failure match-first
-  5 class DOT1X_FAILED do-until-failure
-   10 terminate dot1x
-   20 authentication-restart 60
-  10 class AAA_SVR_DOWN_UNAUTHD_HOST do-until-failure
-   10 activate service-template DefaultCriticalAuthVlan_SRV_TEMPLATE
-   20 activate service-template DefaultCriticalVoice_SRV_TEMPLATE
-   25 activate service-template DefaultCriticalAccess_SRV_TEMPLATE
-   30 authorize
-   40 pause reauthentication
-  20 class AAA_SVR_DOWN_AUTHD_HOST do-until-failure
-   10 pause reauthentication
-   20 authorize
-  30 class MAB_FAILED do-until-failure
-   10 terminate mab
-   20 authenticate using dot1x retries 2 retry-time 0 priority 10
-  40 class DOT1X_NO_RESP do-until-failure
-   10 terminate dot1x
-   20 authentication-restart 60
-  50 class DOT1X_TIMEOUT do-until-failure
-   10 terminate dot1x
-   20 authenticate using mab priority 20
-  60 class always do-until-failure
-   10 terminate mab
-   20 terminate dot1x
-   30 authentication-restart 60
- event aaa-available match-all
-  10 class IN_CRITICAL_AUTH do-until-failure
-   10 clear-session
-  20 class NOT_IN_CRITICAL_AUTH do-until-failure
-   10 resume reauthentication
- event agent-found match-all
-  10 class always do-until-failure
-   10 terminate mab
-   20 authenticate using dot1x retries 2 retry-time 0 priority 10
- event inactivity-timeout match-all
-  10 class always do-until-failure
-   10 clear-session
- event authentication-success match-all
- event violation match-all
-  10 class always do-until-failure
-   10 restrict
- event authorization-failure match-all
-  10 class AUTHC_SUCCESS-AUTHZ_FAIL do-until-failure
-   10 authentication-restart 60
-!
-policy-map type control subscriber PMAP_DefaultWiredDot1xOpenAuth_1X_MAB
- event session-started match-all
-  10 class always do-until-failure
-   10 authenticate using dot1x retries 2 retry-time 0 priority 10
- event authentication-failure match-first
-  5 class DOT1X_FAILED do-until-failure
-   10 terminate dot1x
-   20 authenticate using mab priority 20
-  10 class AAA_SVR_DOWN_UNAUTHD_HOST do-until-failure
-   10 activate service-template DefaultCriticalAuthVlan_SRV_TEMPLATE
-   20 activate service-template DefaultCriticalVoice_SRV_TEMPLATE
-   30 authorize
-   40 pause reauthentication
-  20 class AAA_SVR_DOWN_AUTHD_HOST do-until-failure
-   10 pause reauthentication
-   20 authorize
-  30 class DOT1X_NO_RESP do-until-failure
-   10 terminate dot1x
-   20 authenticate using mab priority 20
-  40 class MAB_FAILED do-until-failure
-   10 terminate mab
-   20 authentication-restart 60
-  50 class DOT1X_TIMEOUT do-until-failure
-   10 terminate dot1x
-   20 authenticate using mab priority 20
-  60 class always do-until-failure
-   10 terminate dot1x
-   20 terminate mab
-   30 authentication-restart 60
- event aaa-available match-all
-  10 class IN_CRITICAL_AUTH do-until-failure
-   10 clear-session
-  20 class NOT_IN_CRITICAL_AUTH do-until-failure
-   10 resume reauthentication
- event agent-found match-all
-  10 class always do-until-failure
-   10 terminate mab
-   20 authenticate using dot1x retries 2 retry-time 0 priority 10
- event inactivity-timeout match-all
-  10 class always do-until-failure
-   10 clear-session
- event authentication-success match-all
- event violation match-all
-  10 class always do-until-failure
-   10 restrict
- event authorization-failure match-all
-  10 class AUTHC_SUCCESS-AUTHZ_FAIL do-until-failure
-   10 authentication-restart 60
-!
-policy-map type control subscriber PMAP_DefaultWiredDot1xOpenAuth_MAB_1X
- event session-started match-all
-  10 class always do-until-failure
-   10 authenticate using mab priority 20
- event authentication-failure match-first
-  5 class DOT1X_FAILED do-until-failure
-   10 terminate dot1x
-   20 authentication-restart 60
-  10 class AAA_SVR_DOWN_UNAUTHD_HOST do-until-failure
-   10 activate service-template DefaultCriticalAuthVlan_SRV_TEMPLATE
-   20 activate service-template DefaultCriticalVoice_SRV_TEMPLATE
-   30 authorize
-   40 pause reauthentication
-  20 class AAA_SVR_DOWN_AUTHD_HOST do-until-failure
-   10 pause reauthentication
-   20 authorize
-  30 class MAB_FAILED do-until-failure
-   10 terminate mab
-   20 authenticate using dot1x retries 2 retry-time 0 priority 10
-  40 class DOT1X_NO_RESP do-until-failure
-   10 terminate dot1x
-   20 authentication-restart 60
-  50 class DOT1X_TIMEOUT do-until-failure
-   10 terminate dot1x
-   20 authenticate using mab priority 20
-  60 class always do-until-failure
-   10 terminate mab
-   20 terminate dot1x
-   30 authentication-restart 60
- event aaa-available match-all
-  10 class IN_CRITICAL_AUTH do-until-failure
-   10 clear-session
-  20 class NOT_IN_CRITICAL_AUTH do-until-failure
-   10 resume reauthentication
- event agent-found match-all
-  10 class always do-until-failure
-   10 terminate mab
-   20 authenticate using dot1x retries 2 retry-time 0 priority 10
- event inactivity-timeout match-all
-  10 class always do-until-failure
-   10 clear-session
- event authentication-success match-all
- event violation match-all
-  10 class always do-until-failure
-   10 restrict
- event authorization-failure match-all
-  10 class AUTHC_SUCCESS-AUTHZ_FAIL do-until-failure
-   10 authentication-restart 60
-!
-policy-map AutoConf-4.0-Trust-Cos-Input-Policy
- class class-default
-  set cos cos table AutoConf-4.0-Trust-Cos-Table
-policy-map AutoConf-4.0-Output-Policy
- class AutoConf-4.0-Output-Priority-Queue
-  priority level 1 percent 30
- class AutoConf-4.0-Output-Control-Mgmt-Queue
-  bandwidth remaining percent 10 
-  queue-limit dscp cs2 percent 80
-  queue-limit dscp cs3 percent 90
-  queue-limit dscp cs6 percent 100
-  queue-limit dscp cs7 percent 100
-  queue-buffers ratio 10
- class AutoConf-4.0-Output-Multimedia-ConfQueue
-  bandwidth remaining percent 10 
-  queue-buffers ratio 10
- class AutoConf-4.0-Output-Trans-Data-Queue
-  bandwidth remaining percent 10 
-  queue-buffers ratio 10
- class AutoConf-4.0-Output-Bulk-Data-Queue
-  bandwidth remaining percent 4 
-  queue-buffers ratio 10
- class AutoConf-4.0-Output-Scavenger-Queue
-  bandwidth remaining percent 1 
-  queue-buffers ratio 10
- class AutoConf-4.0-Output-Multimedia-StrmQueue
-  bandwidth remaining percent 10 
-  queue-buffers ratio 10
- class class-default
-  bandwidth remaining percent 25 
-  queue-buffers ratio 25
-policy-map AutoConf-4.0-CiscoSoftPhone-Input-Policy
- class AutoConf-4.0-Voip-Data-Class
-  set dscp ef
-  police cir 128000 bc 8000
-   conform-action transmit 
-   exceed-action set-dscp-transmit dscp table policed-dscp
- class AutoConf-4.0-Voip-SignalClass
-  set dscp cs3
-  police cir 32000 bc 8000
-   conform-action transmit 
-   exceed-action set-dscp-transmit dscp table policed-dscp
- class AutoConf-4.0-Multimedia-Conf-Class
-  set dscp af41
-  police cir 5000000
-   conform-action transmit 
-   exceed-action drop 
- class AutoConf-4.0-Bulk-Data-Class
-  set dscp af11
-  police cir 10000000
-   conform-action transmit 
-   exceed-action set-dscp-transmit dscp table policed-dscp
- class AutoConf-4.0-Transaction-Class
-  set dscp af21
-  police cir 10000000
-   conform-action transmit 
-   exceed-action set-dscp-transmit dscp table policed-dscp
- class AutoConf-4.0-Scavanger-Class
-  set dscp cs1
-  police cir 10000000
-   conform-action transmit 
-   exceed-action drop 
- class AutoConf-4.0-Signaling-Class
-  set dscp cs3
-  police cir 32000 bc 8000
-   conform-action transmit 
-   exceed-action drop 
- class AutoConf-4.0-Default-Class
-  set dscp default
-  police cir 10000000
-   conform-action transmit 
-   exceed-action set-dscp-transmit dscp table policed-dscp
 policy-map system-cpp-policy
 policy-map DNA-dscp#APIC_QOS_Q_OUT
  class DNA-EZQOS_2P6Q3T_9K#VOICE-PQ1
@@ -1123,30 +724,6 @@ policy-map DNA-dscp#APIC_QOS_Q_OUT
   queue-buffers ratio 25
   random-detect dscp-based
   random-detect dscp 0 percent 80 100
-policy-map AutoConf-4.0-Trust-Dscp-Input-Policy
- class class-default
-  set dscp dscp table AutoConf-4.0-Trust-Dscp-Table
-policy-map AutoConf-4.0-CiscoPhone-Input-Policy
- class AutoConf-4.0-Voip-Data-CiscoPhone-Class
-  set dscp ef
-  police cir 128000 bc 8000
-   conform-action transmit 
-   exceed-action set-dscp-transmit dscp table policed-dscp
- class AutoConf-4.0-Voip-Video-CiscoPhone-Class
-  set dscp af41
-  police cir 10000000 bc 8000
-   conform-action transmit 
-   exceed-action set-dscp-transmit dscp table policed-dscp
- class AutoConf-4.0-VoipSignal-CiscoPhone-Class
-  set dscp cs3
-  police cir 32000 bc 8000
-   conform-action transmit 
-   exceed-action set-dscp-transmit dscp table policed-dscp
- class AutoConf-4.0-Default-Class
-  set dscp default
-policy-map port_child_policy
- class non-client-nrt-class
-  bandwidth remaining ratio 10
 policy-map DNA-MARKING_IN
  class DNA-MARKING_IN#TUNNELED-NBAR
  class DNA-MARKING_IN#VOICE_CUSTOM
@@ -1206,113 +783,24 @@ policy-map DNA-MARKING_IN
 !
 !
 !
-autoconf enable
 !
-template AP_INTERFACE_TEMPLATE
+interface Loopback0
+ description RP and MGMT address
+ ip address 10.0.0.254 255.255.255.255
+ ip pim sparse-mode
+ ip router isis 
+ ntp broadcast
+!
+interface Port-channel110
+ description WLC lan
+ switchport trunk native vlan 10
+ switchport trunk allowed vlan 10,30,40,90
  switchport mode trunk
  switchport nonegotiate
- service-policy input AutoConf-4.0-Trust-Cos-Input-Policy
-!
-template ApAutzTemplate
- switchport access vlan 2045
- switchport mode access
- access-session interface-template sticky timer 60
-!
-template DMP_INTERFACE_TEMPLATE
- spanning-tree portfast
- spanning-tree bpduguard enable
- switchport mode access
- switchport block unicast
-!
-template DefaultWiredDot1xClosedAuth
- dot1x pae authenticator
- dot1x timeout supp-timeout 2
- dot1x max-req 3
- switchport mode access
- switchport voice vlan 2046
- mab
- access-session closed
- access-session port-control auto
- authentication periodic
- authentication timer reauthenticate server
- service-policy type control subscriber PMAP_DefaultWiredDot1xClosedAuth_1X_MAB
-!
-template DefaultWiredDot1xLowImpactAuth
- dot1x pae authenticator
- dot1x timeout supp-timeout 7
- dot1x max-req 3
- switchport mode access
- switchport voice vlan 2046
- mab
- access-session port-control auto
- authentication periodic
- authentication timer reauthenticate server
- service-policy type control subscriber PMAP_DefaultWiredDot1xLowImpactAuth_1X_MAB
-!
-template DefaultWiredDot1xOpenAuth
- dot1x pae authenticator
- dot1x timeout supp-timeout 2
- dot1x max-req 3
- switchport mode access
- switchport voice vlan 2046
- mab
- access-session port-control auto
- authentication periodic
- authentication timer reauthenticate server
- service-policy type control subscriber PMAP_DefaultWiredDot1xOpenAuth_1X_MAB
-!
-template IP_CAMERA_INTERFACE_TEMPLATE
- spanning-tree portfast
- spanning-tree bpduguard enable
- switchport mode access
- switchport block unicast
-!
-template IP_PHONE_INTERFACE_TEMPLATE
- storm-control broadcast level pps 1k
- storm-control multicast level pps 2k
- storm-control action trap
- spanning-tree portfast
- spanning-tree bpduguard enable
- switchport mode access
- switchport block unicast
- switchport port-security aging type inactivity
- switchport port-security
- load-interval 30
- ip dhcp snooping limit rate 15
-!
-template LAP_INTERFACE_TEMPLATE
- storm-control broadcast level pps 1k
- storm-control multicast level pps 2k
- storm-control action trap
- spanning-tree portfast
- spanning-tree bpduguard enable
- switchport access vlan 2045
- switchport mode access
- switchport block unicast
- switchport port-security aging type inactivity
- switchport port-security
- load-interval 30
- ip dhcp snooping limit rate 15
-!
-template SWITCH_INTERFACE_TEMPLATE
- switchport mode trunk
-!
-template TP_INTERFACE_TEMPLATE
- storm-control broadcast level pps 1k
- storm-control multicast level pps 2k
- storm-control action trap
- spanning-tree portfast
- spanning-tree bpduguard enable
- switchport mode access
- switchport port-security aging type inactivity
- switchport port-security
- load-interval 30
- ip dhcp snooping limit rate 15
-!
-!
-interface Port-channel1
- switchport mode trunk
  ip dhcp snooping trust
+!
+interface Tunnel1
+ no ip address
 !
 interface GigabitEthernet0/0
  vrf forwarding Mgmt-vrf
@@ -1321,628 +809,533 @@ interface GigabitEthernet0/0
  negotiation auto
 !
 interface GigabitEthernet1/0/1
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
+ description Link - RTR-4331-BORDER - GigabitEthernet0/0/1
+ no switchport
+ ip address 10.0.1.5 255.255.255.254
+ ip pim sparse-mode
+ ip router isis 
+ speed 1000
+ duplex full
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/2
+ description Link - TERM-SERVER - GigabitEthernet0/0
  switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ device-tracking attach-policy IPDT_MAX_10
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/3
+ description MERAKI lan uplink
+ switchport access vlan 30
  switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/4
+ description MERAKI lan uplink
+ switchport access vlan 30
  switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/5
- switchport mode access
+ description VRF GUEST future
+ switchport trunk native vlan 90
+ switchport trunk allowed vlan 90,666
+ switchport mode trunk
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
+ shutdown
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/6
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/7
+ description UPC lan
+ switchport access vlan 10
  switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/8
+ description UPC lan
+ switchport access vlan 10
  switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/9
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/10
+ description PDU lan
+ switchport access vlan 10
  switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ speed 100
+ duplex full
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/11
+ description PDU lan
+ switchport access vlan 10
  switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ speed 100
+ duplex full
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/12
+ description PDU lan
+ switchport access vlan 10
  switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ speed 100
+ duplex full
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/13
+ description ESXi-CIMC1 lan
+ switchport access vlan 10
  switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ speed 100
+ duplex full
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
+ spanning-tree guard root
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/14
+ description ESXi-CIMC2 lan
+ switchport access vlan 10
  switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ speed 100
+ duplex full
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
+ spanning-tree guard root
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/15
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ description Ruh-Ro Something Changed!
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/16
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/17
+ description DNAC-CIMC lan
+ switchport access vlan 10
  switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ speed 100
+ duplex full
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/18
+ description DNAC lan
+ switchport access vlan 10
  switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ speed 1000
+ duplex full
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/19
+ description DNAC-LAB-CIMC lan
+ switchport access vlan 10
  switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ speed 100
+ duplex full
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/20
+ description DNAC-LAB lan
+ switchport access vlan 10
  switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ ip access-group DEMO-NO-WEBSITE-FOR-YOU in
+ ip access-group DEMO-NO-WEBSITE-FOR-YOU out
+ speed 1000
+ duplex full
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/21
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/22
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/23
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/24
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/25
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/26
+ description IOT
+ switchport access vlan 40
  switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ speed 100
+ duplex full
+ authentication periodic
+ authentication timer reauthenticate server
+ access-session closed
+ access-session port-control auto
+ mab
+ dot1x pae authenticator
+ dot1x timeout supp-timeout 7
+ dot1x max-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
+ service-policy type control subscriber PMAP_WiredDot1xClosed_Template
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/27
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/28
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/29
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/30
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/31
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/32
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/33
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/34
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/35
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/36
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/37
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/38
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/39
+ description BLUERAY lan
+ switchport access vlan 30
  switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/40
+ description Garage Door Opener lan
+ switchport access vlan 30
  switchport mode access
+ switchport nonegotiate
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ speed 10
+ duplex half
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/41
- switchport mode access
  device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/42
+ description AP - AP70F3 - GigabitEthernet0
+ switchport access vlan 30
  switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ speed 1000
+ duplex full
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
  spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/43
- switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
  et-analytics enable
- source template DefaultWiredDot1xClosedAuth
- spanning-tree portfast
- spanning-tree bpduguard enable
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/44
+ description AP - KO-AP0C75 - GigabitEthernet0
+ switchport access vlan 20
  switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ ip access-group ACL-DEFAULT in
+ speed 1000
+ duplex full
  spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/45
+ description AP - PO-AP0C75 - GigabitEthernet0
+ switchport access vlan 20
  switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ ip access-group ACL-DEFAULT in
+ speed 1000
+ duplex full
  spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/46
+ description AP - GA-AP0C75 - GigabitEthernet0
+ switchport access vlan 20
  switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ ip access-group ACL-DEFAULT in
+ speed 1000
+ duplex full
  spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/47
+ description AP - MB-AP0C75 - GigabitEthernet0
+ switchport access vlan 20
  switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ ip access-group ACL-DEFAULT in
+ speed 1000
+ duplex full
  spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
 !
 interface GigabitEthernet1/0/48
+ description AP - BM-AP0C75 - GigabitEthernet0
+ switchport access vlan 20
  switchport mode access
- device-tracking attach-policy IPDT_POLICY
- dot1x timeout tx-period 2
- dot1x max-reauth-req 3
- et-analytics enable
- source template DefaultWiredDot1xClosedAuth
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
+ ip access-group ACL-DEFAULT in
+ speed 1000
+ duplex full
  spanning-tree portfast
- spanning-tree bpduguard enable
- service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
 !
 interface GigabitEthernet1/1/1
  device-tracking attach-policy IPDT_POLICY
@@ -1973,60 +1366,101 @@ interface GigabitEthernet1/1/4
  ip nbar protocol-discovery
 !
 interface TenGigabitEthernet1/1/1
+ description DNAC IntraCluster lan Link
+ switchport access vlan 888
+ switchport mode access
  device-tracking attach-policy IPDT_POLICY
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface TenGigabitEthernet1/1/2
+ description DNAC-LAB IntraCluster lan Link
+ switchport access vlan 889
+ switchport mode access
  device-tracking attach-policy IPDT_POLICY
+ ip flow monitor dnacmonitor input
+ ip flow monitor dnacmonitor output
  et-analytics enable
+ spanning-tree portfast
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface TenGigabitEthernet1/1/3
- device-tracking attach-policy IPDT_POLICY
- et-analytics enable
- service-policy input DNA-MARKING_IN
+ description Link - DSW-C9300-TRANSIT - TenGigabitEthernet1/1/8
+ no switchport
+ ip address 10.127.255.1 255.255.255.240
+ ip helper-address 10.10.0.250
+ ip router isis 
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip nbar protocol-discovery
 !
 interface TenGigabitEthernet1/1/4
- device-tracking attach-policy IPDT_POLICY
- et-analytics enable
- service-policy input DNA-MARKING_IN
+ description Link - ASW-C9300-48-DEMO - TenGigabitEthernet1/1/8
+ switchport trunk allowed vlan 1,20,30,40
+ switchport mode trunk
+ device-tracking attach-policy IPDT_MAX_10
+ cts manual
+  policy static sgt 2 trusted
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
+ ip dhcp snooping trust
 !
 interface TenGigabitEthernet1/1/5
- device-tracking attach-policy IPDT_POLICY
- et-analytics enable
- service-policy input DNA-MARKING_IN
+ description Link - WLC-C9800 - TenGigabitEthernet0/1/0
+ switchport trunk native vlan 10
+ switchport trunk allowed vlan 10,30,40,90
+ switchport mode trunk
+ switchport nonegotiate
+ cts manual
+  policy static sgt 2 trusted
+ channel-group 110 mode active
+ spanning-tree guard root
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
+ ip dhcp snooping trust
 !
 interface TenGigabitEthernet1/1/6
- device-tracking attach-policy IPDT_POLICY
- et-analytics enable
- service-policy input DNA-MARKING_IN
+ description Link - WLC-C9800 - TenGigabitEthernet0/1/1
+ switchport trunk native vlan 10
+ switchport trunk allowed vlan 10,30,40,90
+ switchport mode trunk
+ switchport nonegotiate
+ cts manual
+  policy static sgt 2 trusted
+ channel-group 110 mode active
+ spanning-tree guard root
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
+ ip dhcp snooping trust
 !
 interface TenGigabitEthernet1/1/7
- device-tracking attach-policy IPDT_POLICY
- et-analytics enable
+ description ESXi1 Data
+ switchport trunk allowed vlan 10,20,666,777
+ switchport mode trunk
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ spanning-tree portfast trunk
+ spanning-tree bpdufilter enable
+ spanning-tree bpduguard enable
+ spanning-tree guard root
  service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
- ip nbar protocol-discovery
+ ip dhcp snooping trust
 !
 interface TenGigabitEthernet1/1/8
- description PNP STARTUP VLAN
+ description ESXi2 Data
+ switchport trunk allowed vlan 10,20,666,777
  switchport mode trunk
- cts manual
-  policy static sgt 8000 trusted
- channel-group 1 mode desirable
+ switchport nonegotiate
+ device-tracking attach-policy IPDT_MAX_10
+ spanning-tree portfast trunk
+ spanning-tree bpdufilter enable
+ spanning-tree bpduguard enable
+ spanning-tree guard root
+ service-policy input DNA-MARKING_IN
  service-policy output DNA-dscp#APIC_QOS_Q_OUT
  ip dhcp snooping trust
 !
@@ -2059,37 +1493,141 @@ interface TwentyFiveGigE1/1/2
  ip nbar protocol-discovery
 !
 interface AppGigabitEthernet1/0/1
+ switchport trunk allowed vlan 30
+ switchport mode trunk
 !
 interface Vlan1
+ description mgmt vlan - with pnp
+ ip address 10.1.1.254 255.255.255.0
+ ip helper-address 10.10.0.250
+ ip pim sparse-mode
+ ip router isis 
+!
+interface Vlan10
+ description datacenter
+ ip address 10.10.0.254 255.255.255.0
+ ip helper-address 10.10.0.200
+ ip helper-address 10.10.0.250
+ ip pim sparse-mode
+!
+interface Vlan20
+ description wirelessap
+ ip address 10.20.0.254 255.255.255.0
+ ip helper-address 10.10.0.250
+ ip helper-address 10.10.0.200
+ ip pim sparse-mode
+!
+interface Vlan30
+ description wireddata
+ ip address 10.30.0.254 255.255.255.0
+ ip helper-address 10.10.0.250
+ ip helper-address 10.10.0.200
+ ip pim sparse-mode
+!
+interface Vlan40
+ description wirelessdata
+ ip address 10.40.0.254 255.255.255.0
+ ip helper-address 10.10.0.250
+ ip helper-address 10.10.0.200
+ ip pim sparse-mode
+!
+interface Vlan90
+ description guestdmz - no ip address
+ ip vrf forwarding guest
  no ip address
- shutdown
 !
-interface Vlan2047
- ip dhcp client client-id ascii cisco-bc5a.56c5.cd73-Vl2047
- ip address dhcp
+interface Vlan666
+ description firewalldmz - no ip address
+ ip vrf forwarding firewalldmz
+ no ip address
 !
-ip default-gateway 10.126.2.1
+router isis
+ net 49.0000.0010.0000.0254.00
+ is-type level-2-only
+ router-id Loopback0
+ domain-password xxxxxx
+ metric-style transition
+ no hello padding point-to-point
+ log-adjacency-changes
+ passive-interface default
+ no passive-interface Vlan1
+ no passive-interface GigabitEthernet1/0/1
+ no passive-interface TenGigabitEthernet1/1/3
+ no passive-interface Loopback0
+!
+!
+!
+iox
 ip forward-protocol nd
+ip pim bsr-candidate Loopback0 0
+ip pim rp-candidate Loopback0
 ip http server
 ip http authentication local
 ip http secure-server
+ip http secure-trustpoint TP-self-signed-2891411466
 ip http max-connections 16
-ip http client source-interface Vlan2047
-ip tftp source-interface Vlan2047
-ip ssh source-interface Vlan2047
+ip http client source-interface Loopback0
+ip ftp source-interface Loopback0
+ip ftp username xxxxxxx
+ip ftp password 7 xxxxxxxx
+ip tftp source-interface Loopback0
+ip route 0.0.0.0 0.0.0.0 10.1.0.1 200
+ip ssh time-out 60
+ip ssh authentication-retries 2
+ip ssh source-interface Loopback0
 ip ssh version 2
 ip scp server enable
 !
 !
+ip access-list standard DEVICE-MGMT-ONLY
+ 10 permit 10.10.0.20
+ 20 permit 10.10.0.21
+ 30 permit 10.10.0.200
+ 40 permit 10.10.0.250
+ 50 permit 10.0.0.100
+!
+ip access-list extended ACL-ALLOW
+ 10 permit ip any any
+ip access-list extended ACL-DEFAULT
+ 10 permit udp any any eq ntp
+ 20 permit udp any eq bootpc any eq bootps
+ 30 permit udp any any eq domain
+ 40 permit icmp any any
+ 50 permit udp any any eq tftp
+ 60 permit tcp any any eq www
+ 70 permit tcp any any eq 443
+ 80 permit tcp any host 10.10.0.200 eq 8443
+ 90 permit udp any host 10.10.0.100 range 5246 5247
+ 100 permit ip any host 10.10.0.100
+ip access-list extended ACL-POSTURE-REDIRECT
+ 10 deny   udp any any eq domain
+ 20 deny   udp any host 10.10.0.200 eq 8905
+ 30 deny   udp any host 10.10.0.200 eq 8906
+ 40 deny   tcp any host 10.10.0.200 eq 8443
+ 50 deny   tcp any host 10.10.0.200 eq 8905
+ 60 deny   tcp any host 10.10.0.200 eq www
+ 70 permit ip any any
+ip access-list extended ACL-WEBAUTH-REDIRECT
+ 10 deny   udp any any eq domain
+ 20 deny   ip any host 10.10.0.200
+ 30 permit ip any any
 ip access-list extended ACL_WEBAUTH_REDIRECT
- 130 deny   ip any host 10.10.0.200
+ 30 deny   ip any host 10.10.0.200
  500 permit tcp any any eq www
  600 permit tcp any any eq 443
  700 permit tcp any any eq 8443
  800 deny   udp any any eq domain
  900 deny   udp any eq bootpc any eq bootps
-ip access-list extended AutoConf-4.0-Acl-Default
- 10 permit ip any any
+ip access-list extended DEMO-NO-WEBSITE-FOR-YOU
+ 10 deny   tcp host 10.40.0.100 host 10.10.0.30 eq 443
+ 20 deny   tcp host 10.40.0.100 host 10.10.0.30 eq www
+ 30 deny   tcp host 10.40.0.100 host 10.10.0.31 eq 443
+ 40 deny   tcp host 10.40.0.100 host 10.10.0.31 eq www
+ 60 deny   tcp host 10.10.0.30 eq 443 host 10.40.0.100
+ 70 deny   tcp host 10.10.0.30 eq www host 10.40.0.100
+ 80 deny   tcp host 10.10.0.31 eq 443 host 10.40.0.100
+ 90 deny   tcp host 10.10.0.31 eq www host 10.40.0.100
+ 100 permit ip any any
 ip access-list extended DNA-MARKING_IN#OAM_CUSTOM__acl
  10 remark dns
  10 permit tcp any any eq domain
@@ -2102,22 +1640,26 @@ ip access-list extended DNA-MARKING_IN#TUNNELED-NBAR__acl
  20 permit udp any any eq 5247
  30 remark vxlan
  30 permit udp any any eq 4789
-ip access-list extended IPV4_CRITICAL_AUTH_ACL
- 10 permit ip any any
-ip access-list extended IPV4_PRE_AUTH_ACL
- 10 permit udp any any eq bootpc
- 20 permit udp any any eq domain
- 30 deny   ip any any
 !
 !
-ip radius source-interface Vlan2047 
-logging source-interface Vlan2047
+ip radius source-interface Loopback0 
+ip sla enable reaction-alerts
+logging origin-id ip
+logging source-interface Loopback0
 logging host 10.10.0.20
+logging host 10.10.0.200 transport udp port 20514
 !
 !
-snmp-server community xxxxxxxx RO
+snmp-server engineID  xxxxxxx
+snmp-server group V3GROUP v3 auth read V3READ write V3WRITE access DEVICE-MGMT-ONLY
+snmp-server group AdminV3SNMP v3 auth 
+snmp-server view xxxxxxxx
+snmp-server view xxxxxxxx
 snmp-server community xxxxxxxx RW
-snmp-server trap-source Vlan2047
+snmp-server community xxxxxxxx RO
+snmp-server trap-source Loopback0
+snmp-server location BASE2HQ
+snmp-server contact xxxxxxxx
 snmp-server enable traps snmp authentication linkdown linkup coldstart warmstart
 snmp-server enable traps flowmon
 snmp-server enable traps entity-perf throughput-notif
@@ -2207,7 +1749,16 @@ snmp-server enable traps mac-notification change move threshold
 snmp-server enable traps vrfmib vrf-up vrf-down vnet-trunk-up vnet-trunk-down
 snmp-server enable traps mpls vpn
 snmp-server enable traps mpls rfc vpn
+snmp-server host 10.10.0.21 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.1 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.2 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.20 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.200 version 3 auth xxxxxxxx 
+snmp-server host 10.20.0.3 version 3 auth xxxxxxxx 
 snmp-server host 10.10.0.20 version 2c xxxxxxxx 
+snmp-server host 10.10.0.20 version 2c xxxxxxxx 
+snmp-server host 10.20.0.200 version 2c xxxxxxxx 
+tftp-server flash:cat9k_iosxe.16.06.04.SPA.bin
 !
 radius-server attribute 6 on-for-login-auth
 radius-server attribute 6 support-multiple
@@ -2216,6 +1767,7 @@ radius-server attribute 25 access-request include
 radius-server attribute 31 mac format ietf upper-case
 radius-server attribute 31 send nas-port-detail mac-only
 radius-server dead-criteria time 5 tries 3
+radius-server retransmit 2
 radius-server deadtime 3
 !
 radius server dnac-radius_10.10.0.200
@@ -2225,14 +1777,6 @@ radius server dnac-radius_10.10.0.200
  automate-tester username dummy ignore-acct-port probe-on
   pac key 7 xxxxxxxx
 !
-!
-ipv6 access-list IPV6_CRITICAL_AUTH_ACL
- sequence 10 permit ipv6 any any
-!
-ipv6 access-list IPV6_PRE_AUTH_ACL
- sequence 10 permit udp any any eq bootpc
- sequence 20 permit udp any any eq domain
- sequence 30 deny ipv6 any any
 !
 control-plane
  service-policy input system-cpp-policy
@@ -2253,16 +1797,215 @@ cts role-based sgt-map 10.10.0.250 sgt 26
 cts role-based sgt-map 10.10.0.251 sgt 26
 cts role-based sgt-map 10.10.0.252 sgt 14
 cts role-based enforcement
-cts role-based enforcement vlan-list 1021-1022,2045,2047
+cts role-based enforcement vlan-list 1-4094
+cts role-based sgt-caching
+banner login ^C
+  Session On $(hostname) Is Monitored!!!
+  *****************************LEGAL WARNING************************************
+  * This device is part of a Demonstration computer network and is provided for*
+  * official use by authorized users ONLY. Any information, documents, or      *
+  * materials in the network are the property of this firm. Unauthorized use,  *
+  * duplication, or disclosure of information or systems in this network is    *
+  * strictly prohibited by Federal Law (18 USC 10130). Use of this network     *
+  * constitutes consent to monitoring which may be released to firm management *
+  * and/or law enforcement agencies and may result in disciplinary action,     *
+  * civil action, and/or criminal prosecution.                                 *
+  ****************************LEGAL WARNING*************************************
+^C
+alias exec showdemoroute show isis ne | i .1.30
+alias exec showdemostatus show int status | i 1/1/4
+alias exec showdemocdp show cdp ne te 1/1/4 det | i IP|Device
+alias exec showdemo event manager run showdemo
+parser view ALLOWEDCMDS
+secret 5 xxxxxxxx
+ commands exec include all event manager run
+ commands exec include event manager
+ commands exec include event
+ commands exec exclude configure
+ commands exec include show isis neighbors
+ commands exec include show isis
+ commands exec include show cdp neighbors detail
+ commands exec include show cdp neighbors Bluetooth0/4 detail
+ commands exec include show cdp neighbors AppGigabitEthernet1/0/1 detail
+ commands exec include show cdp neighbors TwentyFiveGigE1/1/2 detail
+ commands exec include show cdp neighbors TwentyFiveGigE1/1/1 detail
+ commands exec include show cdp neighbors FortyGigabitEthernet1/1/2 detail
+ commands exec include show cdp neighbors FortyGigabitEthernet1/1/1 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/8 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/7 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/6 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/5 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/4 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/3 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/2 detail
+ commands exec include show cdp neighbors TenGigabitEthernet1/1/1 detail
+ commands exec include show cdp neighbors GigabitEthernet1/1/4 detail
+ commands exec include show cdp neighbors GigabitEthernet1/1/3 detail
+ commands exec include show cdp neighbors GigabitEthernet1/1/2 detail
+ commands exec include show cdp neighbors GigabitEthernet1/1/1 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/48 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/47 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/46 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/45 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/44 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/43 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/42 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/41 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/40 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/39 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/38 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/37 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/36 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/35 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/34 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/33 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/32 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/31 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/30 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/29 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/28 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/27 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/26 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/25 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/24 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/23 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/22 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/21 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/20 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/19 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/18 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/17 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/16 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/15 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/14 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/13 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/12 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/11 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/10 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/9 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/8 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/7 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/6 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/5 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/4 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/3 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/2 detail
+ commands exec include show cdp neighbors GigabitEthernet1/0/1 detail
+ commands exec include show cdp neighbors GigabitEthernet0/0 detail
+ commands exec include show cdp neighbors Tunnel2 detail
+ commands exec include show cdp neighbors Tunnel1 detail
+ commands exec include show cdp neighbors Tunnel0 detail
+ commands exec include show cdp neighbors Port-channel110 detail
+ commands exec include show cdp neighbors
+ commands exec include show cdp
+ commands exec include show interfaces status
+ commands exec include show interfaces Vlan666 status
+ commands exec include show interfaces Vlan90 status
+ commands exec include show interfaces Vlan40 status
+ commands exec include show interfaces Vlan30 status
+ commands exec include show interfaces Vlan20 status
+ commands exec include show interfaces Vlan10 status
+ commands exec include show interfaces Vlan1 status
+ commands exec include show interfaces Bluetooth0/4 status
+ commands exec include show interfaces AppGigabitEthernet1/0/1 status
+ commands exec include show interfaces TwentyFiveGigE1/1/2 status
+ commands exec include show interfaces TwentyFiveGigE1/1/1 status
+ commands exec include show interfaces FortyGigabitEthernet1/1/2 status
+ commands exec include show interfaces FortyGigabitEthernet1/1/1 status
+ commands exec include show interfaces TenGigabitEthernet1/1/8 status
+ commands exec include show interfaces TenGigabitEthernet1/1/7 status
+ commands exec include show interfaces TenGigabitEthernet1/1/6 status
+ commands exec include show interfaces TenGigabitEthernet1/1/5 status
+ commands exec include show interfaces TenGigabitEthernet1/1/4 status
+ commands exec include show interfaces TenGigabitEthernet1/1/3 status
+ commands exec include show interfaces TenGigabitEthernet1/1/2 status
+ commands exec include show interfaces TenGigabitEthernet1/1/1 status
+ commands exec include show interfaces GigabitEthernet1/1/4 status
+ commands exec include show interfaces GigabitEthernet1/1/3 status
+ commands exec include show interfaces GigabitEthernet1/1/2 status
+ commands exec include show interfaces GigabitEthernet1/1/1 status
+ commands exec include show interfaces GigabitEthernet1/0/48 status
+ commands exec include show interfaces GigabitEthernet1/0/47 status
+ commands exec include show interfaces GigabitEthernet1/0/46 status
+ commands exec include show interfaces GigabitEthernet1/0/45 status
+ commands exec include show interfaces GigabitEthernet1/0/44 status
+ commands exec include show interfaces GigabitEthernet1/0/43 status
+ commands exec include show interfaces GigabitEthernet1/0/42 status
+ commands exec include show interfaces GigabitEthernet1/0/41 status
+ commands exec include show interfaces GigabitEthernet1/0/40 status
+ commands exec include show interfaces GigabitEthernet1/0/39 status
+ commands exec include show interfaces GigabitEthernet1/0/38 status
+ commands exec include show interfaces GigabitEthernet1/0/37 status
+ commands exec include show interfaces GigabitEthernet1/0/36 status
+ commands exec include show interfaces GigabitEthernet1/0/35 status
+ commands exec include show interfaces GigabitEthernet1/0/34 status
+ commands exec include show interfaces GigabitEthernet1/0/33 status
+ commands exec include show interfaces GigabitEthernet1/0/32 status
+ commands exec include show interfaces GigabitEthernet1/0/31 status
+ commands exec include show interfaces GigabitEthernet1/0/30 status
+ commands exec include show interfaces GigabitEthernet1/0/29 status
+ commands exec include show interfaces GigabitEthernet1/0/28 status
+ commands exec include show interfaces GigabitEthernet1/0/27 status
+ commands exec include show interfaces GigabitEthernet1/0/26 status
+ commands exec include show interfaces GigabitEthernet1/0/25 status
+ commands exec include show interfaces GigabitEthernet1/0/24 status
+ commands exec include show interfaces GigabitEthernet1/0/23 status
+ commands exec include show interfaces GigabitEthernet1/0/22 status
+ commands exec include show interfaces GigabitEthernet1/0/21 status
+ commands exec include show interfaces GigabitEthernet1/0/20 status
+ commands exec include show interfaces GigabitEthernet1/0/19 status
+ commands exec include show interfaces GigabitEthernet1/0/18 status
+ commands exec include show interfaces GigabitEthernet1/0/17 status
+ commands exec include show interfaces GigabitEthernet1/0/16 status
+ commands exec include show interfaces GigabitEthernet1/0/15 status
+ commands exec include show interfaces GigabitEthernet1/0/14 status
+ commands exec include show interfaces GigabitEthernet1/0/13 status
+ commands exec include show interfaces GigabitEthernet1/0/12 status
+ commands exec include show interfaces GigabitEthernet1/0/11 status
+ commands exec include show interfaces GigabitEthernet1/0/10 status
+ commands exec include show interfaces GigabitEthernet1/0/9 status
+ commands exec include show interfaces GigabitEthernet1/0/8 status
+ commands exec include show interfaces GigabitEthernet1/0/7 status
+ commands exec include show interfaces GigabitEthernet1/0/6 status
+ commands exec include show interfaces GigabitEthernet1/0/5 status
+ commands exec include show interfaces GigabitEthernet1/0/4 status
+ commands exec include show interfaces GigabitEthernet1/0/3 status
+ commands exec include show interfaces GigabitEthernet1/0/2 status
+ commands exec include show interfaces GigabitEthernet1/0/1 status
+ commands exec include show interfaces GigabitEthernet0/0 status
+ commands exec include show interfaces Tunnel2 status
+ commands exec include show interfaces Tunnel1 status
+ commands exec include show interfaces Tunnel0 status
+ commands exec include show interfaces Port-channel110 status
+ commands exec include show interfaces Loopback0 status
+ commands exec include show interfaces Null0 status
+ commands exec include show interfaces
+ commands exec include show
+!
+!
 !
 line con 0
  exec-timeout 0 0
+ privilege level 15
+ authorization exec CON-LAB
+ logging synchronous
+ login xxxxxx
  stopbits 1
 line vty 0 4
- transport preferred none
+ exec-timeout 0 0
+ authorization exec CON-LAB
+ logging synchronous
+ login xxxxxx
+ terminal-type mon
+ length 0
  transport input ssh
 line vty 5 15
- transport preferred none
+ exec-timeout 0 0
+ authorization exec CON-VTY
+ logging synchronous
+ login xxxxxx
+ terminal-type mon
+ length 0
  transport input ssh
 line vty 16 31
  transport input ssh
@@ -2274,23 +2017,86 @@ call-home
  profile "CiscoTAC-1"
   active
   destination transport-method http
-ntp source Vlan2047
+ntp source Loopback0
+ntp master 3
 ntp server 10.10.0.250
 !
+netconf ssh
 !
 !
 !
 !
+event manager applet showdemo
+ event none sync yes
+ action a1000 cli command "enable"
+ action a1010 puts ""
+ action a1020 puts "Showing DEMO switch ASW-C9300-48-DEMO connectivity"
+ action a1030 puts ""
+ action b1010 puts "Showing Interface Switch connected on"
+ action b1020 cli command "show int status | i 1/1/4"
+ action b1030 puts "$_cli_result"
+ action b1040 puts ""
+ action c1010 puts "Showing IP Address for Downstream Switch"
+ action c1020 cli command "show cdp ne te 1/1/4 det | i IP|Device"
+ action c1030 puts "$_cli_result"
+ action c1040 puts ""
+ action d1010 puts "Showing if ISIS Routing Established"
+ action d1020 cli command "show isis ne | i .1.30"
+ action d1030 puts "$_cli_result"
+ action d1040 puts ""
+event manager applet update-port
+ event neighbor-discovery interface regexp GigabitEthernet.* cdp add
+ action 101 regexp "(Switch|Router)" "$_nd_cdp_capabilities_string"
+ action 200 if $_regexp_result eq "1"
+ action 201  regexp "(Trans-Bridge)" "$_nd_cdp_capabilities_string"
+ action 210  if $_regexp_result eq "1"
+ action 211   cli command "enable"
+ action 212   cli command "config t"
+ action 213   cli command "interface $_nd_local_intf_name"
+ action 214   regexp "^([^\.]+)" "$_nd_cdp_entry_name" match host
+ action 215   regexp "^([^\.]+)" "$_nd_port_id" match connectedport
+ action 216   cli command "no description"
+ action 217   cli command "description AP - $host - $connectedport"
+ action 220  else
+ action 221   cli command "enable"
+ action 222   cli command "config t"
+ action 223   cli command "interface $_nd_local_intf_name"
+ action 224   regexp "^([^\.]+)\." "$_nd_cdp_entry_name" match host
+ action 225   regexp "^([^\.]+)" "$_nd_port_id" match connectedport
+ action 226   cli command "no description"
+ action 227   cli command "description Link - $host - $connectedport"
+ action 230  end
+ action 240 end
+event manager applet DAILY-COMPLIANCE-BREAK
+ event timer cron name DAILY-RESET cron-entry "30 08 * * 1-5"
+ action 1.0 syslog msg "RUN: 'DAILY-COMPLIANCE-BREAK'  EEM applet."
+ action 2.0 puts "DAILY-COMPLIANCE-BREAK"
+ action 2.1 cli command "enable"
+ action 2.2 cli command "config t"
+ action 2.3 cli command "int gi 1/0/15"
+ action 2.4 puts "New Description"
+ action 2.5 cli command "description Ruh-Ro Something Changed!"
+ action 2.6 cli command "exit"
+event manager applet DAILY-COMPLIANCE-FIX
+ event timer cron name DAILY-RESET cron-entry "30 17 * * 1-5"
+ action 1.0 syslog msg "RUN: 'DAILY-COMPLIANCE-FIX'  EEM applet."
+ action 2.0 puts "DAILY-COMPLIANCE-FIX"
+ action 2.1 cli command "enable"
+ action 2.2 cli command "config t"
+ action 2.3 cli command "int gi 1/0/15"
+ action 2.4 puts "Remove Description"
+ action 2.5 cli command "no description"
+ action 2.6 cli command "exit"
+ action 2.7 cli command "wr"
 !
 !
-pnp profile pnp-zero-touch
+pnp profile pnp_redirection_profile
  transport https ipv4 10.10.0.20 port 443
-pnp startup-vlan 2047
 telemetry ietf subscription 500
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/poe_port_detail
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2298,7 +2104,7 @@ telemetry ietf subscription 501
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/poe_module
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2306,7 +2112,7 @@ telemetry ietf subscription 502
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/poe_stack
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2314,7 +2120,7 @@ telemetry ietf subscription 503
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/poe_switch
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2322,7 +2128,7 @@ telemetry ietf subscription 504
  encoding encode-tdl
  filter nested-uri /services;serviceName=ios_oper/platform_component;cname=0?platform_properties
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy periodic 30000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2330,7 +2136,7 @@ telemetry ietf subscription 550
  encoding encode-tdl
  filter tdl-uri /services;serviceName=smevent/sessionevent
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2338,7 +2144,7 @@ telemetry ietf subscription 551
  encoding encode-tdl
  filter tdl-uri /services;serviceName=sessmgr_oper/session_context_data
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2346,7 +2152,7 @@ telemetry ietf subscription 552
  encoding encode-tdl
  filter tdl-uri /services;serviceName=iosevent/sisf_mac_oper_state
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2354,7 +2160,7 @@ telemetry ietf subscription 553
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/sisf_db_wired_mac
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2362,7 +2168,7 @@ telemetry ietf subscription 554
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/cdp_neighbor_detail
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2370,7 +2176,7 @@ telemetry ietf subscription 555
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/cdp_neighbor_detail
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2378,7 +2184,7 @@ telemetry ietf subscription 600
  encoding encode-tdl
  filter tdl-uri /services;serviceName=sessmgr_oper/tbl_aaa_servers_stat
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy periodic 60000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2386,7 +2192,7 @@ telemetry ietf subscription 601
  encoding encode-tdl
  filter tdl-uri /services;serviceName=sessmgr_oper/tbl_aaa_servers_stat
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2394,7 +2200,7 @@ telemetry ietf subscription 602
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_emul_oper/lisp_routers;top_id=0/sessions
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2402,7 +2208,7 @@ telemetry ietf subscription 603
  encoding encode-tdl
  filter tdl-uri /services;serviceName=iosevent/lisp_tcp_session_state
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2410,7 +2216,7 @@ telemetry ietf subscription 604
  encoding encode-tdl
  filter nested-uri /services;serviceName=ios_emul_oper/lisp_routers;top_id=0/instances;iid=0/af;iaftype=LISP_TDL_IAF_IPV4/lisp_publisher
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy periodic 360000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2418,7 +2224,7 @@ telemetry ietf subscription 605
  encoding encode-tdl
  filter tdl-uri /services;serviceName=iosevent/lisp_pubsub_session_state
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2426,7 +2232,7 @@ telemetry ietf subscription 750
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_emul_oper/environment_sensor
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy periodic 30000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2434,7 +2240,7 @@ telemetry ietf subscription 751
  encoding encode-tdl
  filter tdl-uri /services;serviceName=ios_oper/platform_component
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy periodic 30000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2442,7 +2248,7 @@ telemetry ietf subscription 1020
  encoding encode-tdl
  filter tdl-uri /services;serviceName=iosevent/install_status
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy on-change
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2450,7 +2256,7 @@ telemetry ietf subscription 8882
  encoding encode-tdl
  filter tdl-transform trustSecCounterDelta
  receiver-type protocol
- source-address 10.126.2.2
+ source-address 10.0.0.254
  stream native
  update-policy periodic 90000
  receiver name DNAC_ASSURANCE_RECEIVER
@@ -2494,6 +2300,18 @@ telemetry transform trustSecCounterDelta
   output-field 9
    field cts_rolebased_policy.last_updated_time
  specified
+app-hosting appid TEVA
+ app-vnic AppGigabitEthernet trunk
+  vlan 30 guest-interface 0
+   guest-ipaddress 10.30.0.5 netmask 255.255.255.0
+ app-default-gateway 10.30.0.254 guest-interface 0
+ app-resource docker
+  prepend-pkg-opts
+  run-opts 1 "-e TEAGENT_ACCOUNT_TOKEN=xmz6yub2mtc0ghd15d1y2dq8g6jp381t"
+  run-opts 2 "--hostname BASE2HQ-CSW-TEVA"
+ name-server0 10.10.0.250
+ start
 netconf-yang
+restconf
 end
 
