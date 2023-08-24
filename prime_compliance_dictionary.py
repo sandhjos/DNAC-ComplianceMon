@@ -117,7 +117,23 @@ def all_files_into_dict(DIRECTORY):
                 counter = counter + 1
     return audit_database
 
-#deal with array of conditions next
+# Read XML file into a dictionary
+def xml_str_into_dict(xml_str):
+    audit_database = {}
+    counter = 0
+    # parse the all the xml files
+    comp_rule = xmltodict.parse(xml_str)
+    #print("\n\n",comp_rule)
+    if type(comp_rule['CustomPolicy']['Rules']['Rule']['Conditions']['Condition']) != list :
+        #audit_rule = dictionary_builder_single(comp_rule, counter)
+        #print("\n\n",audit_rule)
+        audit_database.update(dictionary(comp_rule, counter))
+        #print("\n\n",audit_database)
+        counter = counter + 1
+    else:
+        audit_database.update(dictionary_list(comp_rule, counter))
+        counter = counter + 1
+    return audit_database
 
 #     ----------------------------- MAIN -----------------------------
 
