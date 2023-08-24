@@ -107,18 +107,18 @@ def json_export(ARRAY, DIRECTORY):
         if line.startswith("test"):
             test = {}
             test["id"] = line.split(":")[0].strip()
-            test["result"] = line.split(">> ")[1].split(":")[0].strip()
-            if len(line.split(":")) > 1:
-                test["message"] = line.split(":")[1].strip()
+            test["result"] = line.split()[3]
+            if test["result"] != 'Passed':
+                test["message"] = line.split(': ')[2].split('\n\n')[0]
+                #test["message"] = line.split(': ')[2] #old-code
+            else:
+                test["message"] = ""
+            # Check if the line contains an instance
+            instances = []
+            if ("Instances:" in line):
+                test["instances"] = line.split('\n\n')[1]
             tests.append(test)
             continue
-        # Check if the line contains an instance
-        if ("Instances:" in line) and tests:
-            tests[-1]["instances"] = []
-            continue
-        if tests and tests[-1].get("instances"):
-            # Add instance to the last test
-            tests[-1]["instances"].append(line.strip())
     # Add device and tests to the compliance report
     compliance_report["device"] = device
     compliance_report["tests"] = tests
@@ -140,7 +140,7 @@ def json_export(ARRAY, DIRECTORY):
         # Write the JSON object to the file
         json.dump(compliance_report, outfile)
     return 
-    
+
 #     ----------------------------- MAIN -----------------------------
 
 # For testing purposes below
