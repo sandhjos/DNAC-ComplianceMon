@@ -251,9 +251,18 @@ def compliance_run(directory, data, report_files, json_files):
     report_path = "../../" + report_files
     json_path = "../../" + json_files
     compliance_data = []
+    # Get the current date time in UTC timezone
+    now_utc = datetime.datetime.now(pytz.UTC)
+    # Convert to timezone
+    time_zone = 'US/Eastern'
+    tz = pytz.timezone(time_zone)
+    now_tz = now_utc.astimezone(tz)
+    # Format the date and time string
+    date_str = now_tz.strftime('%m/%d/%Y').replace('/', '_')
+    time_str = now_tz.strftime('%H:%M:%S').replace(':', '_')
     pdf_data = ""
     for filename in os.listdir(directory):
-        if filename.endswith('_run_config.txt') and "temp" not in filename:
+        if filename.endswith(date_str+'_run_config.txt') and "temp" not in filename:
             path = directory + filename
             violation_list = (audit(path, data))
             compliance_data = compliance_report(violation_list, filename)
